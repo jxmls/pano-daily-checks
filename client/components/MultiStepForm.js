@@ -32,14 +32,20 @@ export default function MultiStepForm() {
     }
   };
 
-  const handleSubmit = async () => {
-    const res = await fetch("/api/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData)
-    });
-    if (res.ok) alert("✅ Submission successful!");
-  };
+ const handleSubmit = async () => {
+  const res = await fetch("https://pano-daily-checks.onrender.com/api/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData)
+  });
+
+  if (res.ok) {
+    alert("✅ Submission successful!");
+    // Optionally clear form or redirect
+  } else {
+    alert("❌ Submission failed");
+  }
+};
 
   return (
     <div>
