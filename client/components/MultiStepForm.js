@@ -33,26 +33,29 @@ export default function MultiStepForm() {
   };
 
   const handleSubmit = async () => {
-  console.log("🟢 Submit button clicked");
-  console.log("Payload:", formData);
+    console.log("🟢 Submit button clicked");
+    console.log("Payload:", formData);
 
-  try {
-    const res = await fetch("https://pano-daily-checks.onrender.com/api/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData)
-    });
+    try {
+      const res = await fetch("https://pano-daily-checks.onrender.com/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    if (res.ok) {
-      alert("✅ Submission successful!");
-    } else {
-      alert("❌ Submission failed.");
+      const data = await res.json();
+      console.log("🔁 API response:", data);
+
+      if (res.ok) {
+        alert("✅ Submission successful!");
+      } else {
+        alert("❌ Submission failed.");
+      }
+    } catch (error) {
+      console.error("❌ Submit error:", error);
+      alert("❌ Network error.");
     }
-  } catch (error) {
-    console.error("❌ Submit error:", error);
-    alert("❌ Network error.");
-  }
-};
+  };
 
   return (
     <div>
@@ -102,13 +105,9 @@ export default function MultiStepForm() {
           </button>
         )}
         {step < 3 ? (
-          <button type="button" onClick={next}>
-            Next
-          </button>
+          <button type="button" onClick={next}>Next</button>
         ) : (
-          <button type="button" onClick={handleSubmit}>
-            Submit
-          </button>
+          <button type="button" onClick={handleSubmit}>Submit</button>
         )}
       </div>
     </div>
