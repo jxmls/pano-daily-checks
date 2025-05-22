@@ -32,50 +32,82 @@ export default function MultiStepForm() {
     }
   };
 
- const handleSubmit = async () => {
-  try {
-    const res = await fetch("https://pano-daily-checks.onrender.com/api/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData)
-    });
+  const handleSubmit = async () => {
+    console.log("Submitting:", formData); // optional debug
+    try {
+      const res = await fetch("https://pano-daily-checks.onrender.com/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
 
-    if (res.ok) {
-      alert("✅ Submission successful!");
-    } else {
-      alert("❌ Submission failed. Try again.");
+      if (res.ok) {
+        alert("✅ Submission successful!");
+      } else {
+        alert("❌ Submission failed.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("❌ Network error. Try again.");
     }
-  } catch (error) {
-    console.error("Error submitting form:", error);
-    alert("❌ Submission failed due to a network error.");
-  }
-};
+  };
 
   return (
     <div>
       {step === 1 && (
         <div>
           <label>Date</label>
-          <input type="date" value={formData.date} onChange={(e) => handleChange("main", "date", e.target.value)} />
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) => handleChange("main", "date", e.target.value)}
+          />
           <label>Engineer</label>
-          <input type="text" value={formData.engineer} onChange={(e) => handleChange("main", "engineer", e.target.value)} />
+          <input
+            type="text"
+            value={formData.engineer}
+            onChange={(e) => handleChange("main", "engineer", e.target.value)}
+          />
         </div>
       )}
+
       {step === 2 && (
         <div>
           <label>SolarWinds Client</label>
-          <input type="text" value={formData.solarwinds.client} onChange={(e) => handleChange("solarwinds", "client", e.target.value)} />
+          <input
+            type="text"
+            value={formData.solarwinds.client}
+            onChange={(e) => handleChange("solarwinds", "client", e.target.value)}
+          />
         </div>
       )}
+
       {step === 3 && (
         <div>
           <label>vSAN Client</label>
-          <input type="text" value={formData.vsan.client} onChange={(e) => handleChange("vsan", "client", e.target.value)} />
+          <input
+            type="text"
+            value={formData.vsan.client}
+            onChange={(e) => handleChange("vsan", "client", e.target.value)}
+          />
         </div>
       )}
-      <div>
-        {step > 1 && <button onClick={prev}>Back</button>}
-        {step < 3 ? <button onClick={next}>Next</button> : <button onClick={handleSubmit}>Submit</button>}
+
+      <div style={{ marginTop: "1rem" }}>
+        {step > 1 && (
+          <button type="button" onClick={prev} style={{ marginRight: "1rem" }}>
+            Back
+          </button>
+        )}
+        {step < 3 ? (
+          <button type="button" onClick={next}>
+            Next
+          </button>
+        ) : (
+          <button type="button" onClick={handleSubmit}>
+            Submit
+          </button>
+        )}
       </div>
     </div>
   );
