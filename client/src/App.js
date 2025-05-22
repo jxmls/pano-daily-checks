@@ -1,13 +1,8 @@
-import React from "react";
-import MultiStepForm from './components/MultiStepForm';
-
 function App() {
   return (
-    <div>
-      <h1>Daily Infrastructure Check 🚀</h1>
-      <MultiStepForm />
+    <div className="p-6 text-xl font-semibold text-center">
+      Tailwind is working! 🚀
     </div>
   );
 }
 
-export default App;
