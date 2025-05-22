@@ -59,6 +59,7 @@ export default function MultiStepForm() {
 
   return (
     <div>
+          <h1>Daily Infrastructure Check 🚀</h1>
       {step === 1 && (
         <div>
           <label>Date</label>
