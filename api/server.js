@@ -5,9 +5,15 @@ const cors = require('cors');
 
 const app = express();
 const prisma = new PrismaClient();
-const port = process.env.PORT;
+const port = process.env.PORT || 3001;
 
-app.use(cors());
+const corsOptions = {
+  origin: '*', // or restrict to 'https://pano-daily-checks.vercel.app'
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // POST /submit
