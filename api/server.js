@@ -14,7 +14,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Serve static files from client build
-app.use(express.static(path.join(__dirname, "..", "client", "build")));
+app.use(express.static(path.join(__dirname, "client/build")));
 
 // API route
 app.post("/api/submit", async (req, res) => {
@@ -37,13 +37,8 @@ app.post("/api/submit", async (req, res) => {
 });
 
 // View submissions
-app.get("/api/submissions", async (req, res) => {
-  try {
-    const submissions = await prisma.submission.findMany({ orderBy: { date: "desc" } });
-    res.json(submissions);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/build", "index.html"));
 });
 
 // Catch-all to serve frontend
