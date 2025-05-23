@@ -1,8 +1,18 @@
+// FIXED MultiStepForm.js
 import React from "react";
 import useDailyCheckForm from "./useDailyCheckForm";
 
 export default function MultiStepForm() {
-  const { step, formData, handleChange, next, prev, handleSubmit } = useDailyCheckForm();
+  const {
+    step,
+    formData,
+    handleChange,
+    handleAlertChange,
+    addAlertRow,
+    next,
+    prev,
+    handleSubmit
+  } = useDailyCheckForm();
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
@@ -10,13 +20,20 @@ export default function MultiStepForm() {
 
       {step === 1 && (
         <div className="space-y-4">
+          <p className="text-gray-600 mb-4">
+            This is a daily checklist to check and address any alerts flagged in the following monitoring tools:
+            <ul className="list-disc list-inside mt-2">
+              <li>SolarWinds</li>
+              <li>VMware vSAN</li>
+            </ul>
+          </p>
           <div>
             <label className="block font-medium mb-1">Date</label>
             <input
               type="date"
               className="w-full border rounded px-3 py-2"
               value={formData.date}
-              onChange={(e) => handleChange("alerts", [index, "name"], e.target.value)}
+              onChange={(e) => handleChange("main", "date", e.target.value)}
             />
           </div>
           <div>
@@ -97,15 +114,18 @@ export default function MultiStepForm() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="border px-2 py-1"><input className="w-full" /></td>
-                  <td className="border px-2 py-1"><input className="w-full" /></td>
-                  <td className="border px-2 py-1"><input className="w-full" /></td>
-                  <td className="border px-2 py-1"><input className="w-full" /></td>
-                  <td className="border px-2 py-1"><input className="w-full" /></td>
-                </tr>
+                {formData.solarwinds.alerts.map((alert, index) => (
+                  <tr key={index}>
+                    <td className="border px-2 py-1"><input className="w-full" value={alert.name} onChange={(e) => handleAlertChange(index, "name", e.target.value)} /></td>
+                    <td className="border px-2 py-1"><input className="w-full" value={alert.details} onChange={(e) => handleAlertChange(index, "details", e.target.value)} /></td>
+                    <td className="border px-2 py-1"><input className="w-full" value={alert.time} onChange={(e) => handleAlertChange(index, "time", e.target.value)} /></td>
+                    <td className="border px-2 py-1"><input className="w-full" value={alert.ticket} onChange={(e) => handleAlertChange(index, "ticket", e.target.value)} /></td>
+                    <td className="border px-2 py-1"><input className="w-full" value={alert.notes} onChange={(e) => handleAlertChange(index, "notes", e.target.value)} /></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            <button onClick={addAlertRow} className="mt-2 text-blue-600 text-sm">➕ Add Row</button>
           </div>
         </div>
       )}
