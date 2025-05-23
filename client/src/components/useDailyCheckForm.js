@@ -7,39 +7,38 @@ export default function useDailyCheckForm() {
     engineer: "",
     solarwinds: {
       servicesRunning: "",
-      client: "Multiple", // ✅ Default value
+      client: "Multiple",
       alertType: "",
       alerts: [
-        { name: "", details: "", time: "", ticket: "", notes: "" } // ✅ One initial row
+        { name: "", details: "", time: "", ticket: "", notes: "" }
       ]
     }
   });
 
-  const handleChange = (section, field, value) => {
+  const handleChange = (section, ...args) => {
     if (section === "main") {
+      const [field, value] = args;
       setFormData((prev) => ({ ...prev, [field]: value }));
-    } else {
+    } else if (section === "solarwinds") {
+      const [field, value] = args;
       setFormData((prev) => ({
         ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value
-        }
+        solarwinds: { ...prev.solarwinds, [field]: value }
       }));
+    } else if (section === "alerts") {
+      const [index, field, value] = args;
+      setFormData((prev) => {
+        const updatedAlerts = [...prev.solarwinds.alerts];
+        updatedAlerts[index][field] = value;
+        return {
+          ...prev,
+          solarwinds: {
+            ...prev.solarwinds,
+            alerts: updatedAlerts
+          }
+        };
+      });
     }
-  };
-
-  const handleAlertChange = (index, field, value) => {
-    const updatedAlerts = [...formData.solarwinds.alerts];
-    updatedAlerts[index][field] = value;
-
-    setFormData((prev) => ({
-      ...prev,
-      solarwinds: {
-        ...prev.solarwinds,
-        alerts: updatedAlerts
-      }
-    }));
   };
 
   const addAlertRow = () => {
@@ -62,14 +61,5 @@ export default function useDailyCheckForm() {
   const next = () => setStep((prev) => prev + 1);
   const prev = () => setStep((prev) => prev - 1);
 
-  return {
-    formData,
-    handleChange,
-    step,
-    next,
-    prev,
-    handleSubmit,
-    handleAlertChange,
-    addAlertRow
-  };
+  return { formData, handleChange, step, next, prev, handleSubmit, addAlertRow };
 }
