@@ -16,7 +16,7 @@ export default function MultiStepForm() {
               type="date"
               className="w-full border rounded px-3 py-2"
               value={formData.date}
-              onChange={(e) => handleChange("main", "date", e.target.value)}
+              onChange={(e) => handleChange("alerts", [index, "name"], e.target.value)}
             />
           </div>
           <div>
