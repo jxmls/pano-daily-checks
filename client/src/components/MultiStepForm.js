@@ -114,7 +114,7 @@ export default function MultiStepForm() {
                   <th className="border px-2 py-1">Trigger Time</th>
                   <th className="border px-2 py-1">Ticket</th>
                   <th className="border px-2 py-1">Notes</th>
-                  <th className="border px-2 py-1">❌</th>
+                  <th className="border px-2 py-1">Remove</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,7 +136,7 @@ export default function MultiStepForm() {
                       <input className="w-full" value={alert.notes} onChange={(e) => handleAlertChange(index, "notes", e.target.value)} />
                     </td>
                     <td className="border px-2 py-1 text-center">
-                      <button onClick={() => deleteAlertRow(index)} className="text-red-600 text-lg">✖</button>
+                      <button onClick={() => deleteAlertRow(index)} className="text-red-600 hover:text-red-800 text-lg">✖</button>
                     </td>
                   </tr>
                 ))}
