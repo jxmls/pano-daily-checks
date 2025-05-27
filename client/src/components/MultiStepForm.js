@@ -9,10 +9,12 @@ export default function MultiStepForm() {
     handleAlertChange,
     addAlertRow,
     toggleRowSelection,
+    toggleSelectAll,
     deleteSelectedRows,
     next,
     prev,
-    handleSubmit
+    handleSubmit,
+    selectAll
   } = useDailyCheckForm();
 
   return (
@@ -110,7 +112,13 @@ export default function MultiStepForm() {
             <table className="min-w-full table-auto border text-sm">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="border px-2 py-1">✔</th>
+                  <th className="border px-2 py-1 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th className="border px-2 py-1">Alert Name</th>
                   <th className="border px-2 py-1">Details</th>
                   <th className="border px-2 py-1">Trigger Time</th>

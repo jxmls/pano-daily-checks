@@ -2,6 +2,7 @@ import { useState } from "react";
 
 export default function useDailyCheckForm() {
   const [step, setStep] = useState(1);
+  const [selectAll, setSelectAll] = useState(false);
   const [formData, setFormData] = useState({
     date: "",
     engineer: "",
@@ -69,6 +70,22 @@ export default function useDailyCheckForm() {
     }));
   };
 
+  const toggleSelectAll = () => {
+    const newSelectAll = !selectAll;
+    const newAlerts = formData.solarwinds.alerts.map(alert => ({
+      ...alert,
+      selected: newSelectAll
+    }));
+    setSelectAll(newSelectAll);
+    setFormData(prev => ({
+      ...prev,
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: newAlerts
+      }
+    }));
+  };
+
   const deleteSelectedRows = () => {
     const filteredAlerts = formData.solarwinds.alerts.filter(alert => !alert.selected);
     setFormData(prev => ({
@@ -78,6 +95,7 @@ export default function useDailyCheckForm() {
         alerts: filteredAlerts
       }
     }));
+    setSelectAll(false);
   };
 
   const next = () => setStep(prev => prev + 1);
@@ -85,7 +103,6 @@ export default function useDailyCheckForm() {
 
   const handleSubmit = () => {
     console.log("Submitting form data:", formData);
-    // You could also POST this to an API endpoint here
   };
 
   return {
@@ -95,6 +112,7 @@ export default function useDailyCheckForm() {
     handleAlertChange,
     addAlertRow,
     toggleRowSelection,
+    toggleSelectAll,
     deleteSelectedRows,
     next,
     prev,
