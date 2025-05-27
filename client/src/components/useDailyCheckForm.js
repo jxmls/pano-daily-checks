@@ -15,34 +15,34 @@ export default function useDailyCheckForm() {
     }
   });
 
-  const handleChange = (section, ...args) => {
+  const handleChange = (section, field, value) => {
     if (section === "main") {
-      const [field, value] = args;
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    } else if (section === "solarwinds") {
-      const [field, value] = args;
-      setFormData((prev) => ({
+      setFormData(prev => ({ ...prev, [field]: value }));
+    } else {
+      setFormData(prev => ({
         ...prev,
-        solarwinds: { ...prev.solarwinds, [field]: value }
+        [section]: {
+          ...prev[section],
+          [field]: value
+        }
       }));
-    } else if (section === "alerts") {
-      const [index, field, value] = args;
-      setFormData((prev) => {
-        const updatedAlerts = [...prev.solarwinds.alerts];
-        updatedAlerts[index][field] = value;
-        return {
-          ...prev,
-          solarwinds: {
-            ...prev.solarwinds,
-            alerts: updatedAlerts
-          }
-        };
-      });
     }
   };
 
+  const handleAlertChange = (index, field, value) => {
+    const updatedAlerts = [...formData.solarwinds.alerts];
+    updatedAlerts[index][field] = value;
+    setFormData(prev => ({
+      ...prev,
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: updatedAlerts
+      }
+    }));
+  };
+
   const addAlertRow = () => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       solarwinds: {
         ...prev.solarwinds,
@@ -54,12 +54,30 @@ export default function useDailyCheckForm() {
     }));
   };
 
-  const handleSubmit = () => {
-    console.log("Submitted", formData);
+  const deleteAlertRow = (index) => {
+    const updatedAlerts = formData.solarwinds.alerts.filter((_, i) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: updatedAlerts
+      }
+    }));
   };
 
-  const next = () => setStep((prev) => prev + 1);
-  const prev = () => setStep((prev) => prev - 1);
+  const next = () => setStep(prev => prev + 1);
+  const prev = () => setStep(prev => prev - 1);
+  const handleSubmit = () => console.log("Submitted", formData);
 
-  return { formData, handleChange, step, next, prev, handleSubmit, addAlertRow };
+  return {
+    step,
+    formData,
+    handleChange,
+    handleAlertChange,
+    addAlertRow,
+    deleteAlertRow,
+    next,
+    prev,
+    handleSubmit
+  };
 }
