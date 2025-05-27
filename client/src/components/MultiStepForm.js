@@ -16,7 +16,11 @@ export default function MultiStepForm() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      <h1 className="text-3xl font-bold mb-2">Daily Infrastructure Check 🚀</h1>
+      <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+  Daily Infrastructure Check
+  <img src="/panologo.png" alt="Panoptics logo" className="h-6 inline-block" />
+</h1>
+
 
       {step === 1 && (
         <div className="space-y-4">
