@@ -7,11 +7,9 @@ export default function useDailyCheckForm() {
     engineer: "",
     solarwinds: {
       servicesRunning: "",
-      client: "Multiple",
+      client: "",
       alertType: "",
-      alerts: [
-        { name: "", details: "", time: "", ticket: "", notes: "" }
-      ]
+      alerts: []
     }
   });
 
@@ -30,44 +28,65 @@ export default function useDailyCheckForm() {
   };
 
   const handleAlertChange = (index, field, value) => {
-    const updatedAlerts = [...formData.solarwinds.alerts];
-    updatedAlerts[index][field] = value;
+    const newAlerts = [...formData.solarwinds.alerts];
+    newAlerts[index][field] = value;
     setFormData(prev => ({
       ...prev,
       solarwinds: {
         ...prev.solarwinds,
-        alerts: updatedAlerts
+        alerts: newAlerts
       }
     }));
   };
 
   const addAlertRow = () => {
+    const newAlert = {
+      name: "",
+      details: "",
+      time: "",
+      ticket: "",
+      notes: "",
+      selected: false
+    };
     setFormData(prev => ({
       ...prev,
       solarwinds: {
         ...prev.solarwinds,
-        alerts: [
-          ...prev.solarwinds.alerts,
-          { name: "", details: "", time: "", ticket: "", notes: "" }
-        ]
+        alerts: [...prev.solarwinds.alerts, newAlert]
       }
     }));
   };
 
-  const deleteAlertRow = (index) => {
-    const updatedAlerts = formData.solarwinds.alerts.filter((_, i) => i !== index);
+  const toggleRowSelection = (index) => {
+    const newAlerts = [...formData.solarwinds.alerts];
+    newAlerts[index].selected = !newAlerts[index].selected;
     setFormData(prev => ({
       ...prev,
       solarwinds: {
         ...prev.solarwinds,
-        alerts: updatedAlerts
+        alerts: newAlerts
+      }
+    }));
+  };
+
+  const deleteSelectedRows = () => {
+    const filteredAlerts = formData.solarwinds.alerts.filter(alert => !alert.selected);
+    setFormData(prev => ({
+      ...prev,
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: filteredAlerts
       }
     }));
   };
 
   const next = () => setStep(prev => prev + 1);
   const prev = () => setStep(prev => prev - 1);
-  const handleSubmit = () => console.log("Submitted", formData);
+
+  const handleSubmit = () => {
+    console.log("Submitting form data:", formData);
+    // You could also POST this to an API endpoint here
+  };
 
   return {
     step,
@@ -75,7 +94,8 @@ export default function useDailyCheckForm() {
     handleChange,
     handleAlertChange,
     addAlertRow,
-    deleteAlertRow,
+    toggleRowSelection,
+    deleteSelectedRows,
     next,
     prev,
     handleSubmit
