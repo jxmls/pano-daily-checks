@@ -17,8 +17,22 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleSubmit
   } = useDailyCheckForm();
 
+  const handleFinalSubmit = () => {
+    handleSubmit();
+    console.log("Form submitted:", formData);
+    onBackToDashboard(); // Redirect to dashboard after submission
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto px-4 py-6 relative">
+      {/* Home Button */}
+      <button
+        onClick={onBackToDashboard}
+        className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded"
+      >
+        Home
+      </button>
+
       <div className="flex justify-center mb-4">
         <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
       </div>
@@ -197,7 +211,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
           <div className="mt-6 flex gap-4">
             <button onClick={prev} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Back</button>
-            <button onClick={handleSubmit} className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded">Submit</button>
+            <button onClick={handleFinalSubmit} className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded">Submit</button>
           </div>
         </div>
       )}
