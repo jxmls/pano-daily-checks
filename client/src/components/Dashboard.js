@@ -1,11 +1,15 @@
-// components/Dashboard.js
 import React from "react";
+
+const modules = [
+  { id: "solarwinds", title: "SolarWinds Checks" },
+  // Add more modules as needed
+];
 
 export default function Dashboard({ onSelectModule, onSignOut }) {
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      <div className="w-full flex justify-between items-center mb-6 max-w-4xl">
+        <img src="/panologo.png" alt="Panoptics logo" className="h-16" />
         <button
           onClick={onSignOut}
           className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
@@ -14,24 +18,8 @@ export default function Dashboard({ onSelectModule, onSignOut }) {
         </button>
       </div>
 
-      <div className="grid gap-4">
-        <button
-          onClick={() => onSelectModule("solarwinds")}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          SolarWinds Checks
-        </button>
-        {/* Add more module buttons here if needed */}
-      </div>
-    </div>
-  );
-}
+      <h1 className="text-3xl font-bold mb-8 text-center">Panoptics Infrastructure Dashboard</h1>
 
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <img src="/panologo.png" alt="Panoptics logo" className="h-24 mb-6" />
-      <h1 className="text-3xl font-bold mb-8">Panoptics Infrastructure Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
         {modules.map((mod) => (
           <button
