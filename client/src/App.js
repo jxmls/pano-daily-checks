@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import LoginScreen from './components/LoginScreen';
 import Dashboard from "./components/Dashboard";
-import MultiStepForm from "./components/MultiStepForm";
+import SolarWindsForm from './components/SolarWindsForm';
 
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
