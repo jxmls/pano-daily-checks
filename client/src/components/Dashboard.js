@@ -2,14 +2,18 @@ import React from "react";
 
 const modules = [
   { id: "solarwinds", title: "SolarWinds Checks" },
-  // Add more modules as needed
+  { id: "vsan", title: "vSAN Health" },
+  { id: "veeam", title: "Veeam Backup Status" },
+  { id: "network", title: "Network Alerts" },
+  { id: "intune", title: "Intune Compliance" },
+  { id: "custom", title: "Custom Checks" },
 ];
 
 export default function Dashboard({ onSelectModule, onSignOut }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="w-full flex justify-between items-center mb-6 max-w-4xl">
-        <img src="/panologo.png" alt="Panoptics logo" className="h-16" />
+    <div className="min-h-screen flex flex-col items-center justify-start p-6 bg-white">
+      {/* Sign Out button top-left */}
+      <div className="w-full flex justify-between items-center mb-4 max-w-6xl">
         <button
           onClick={onSignOut}
           className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
@@ -18,9 +22,16 @@ export default function Dashboard({ onSelectModule, onSignOut }) {
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-8 text-center">Panoptics Infrastructure Dashboard</h1>
+      {/* Logo + Header */}
+      <div className="w-full max-w-6xl mb-6 flex flex-col items-center">
+        <img src="/panologo.png" alt="Panoptics logo" className="h-20 mb-4" />
+        <h1 className="text-3xl font-bold text-center">
+          Panoptics Infrastructure Dashboard
+        </h1>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
+      {/* Tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
         {modules.map((mod) => (
           <button
             key={mod.id}
