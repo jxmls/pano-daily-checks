@@ -1,7 +1,12 @@
 import React from "react";
 import useDailyCheckForm from "./useDailyCheckForm";
+import React, { useState } from "react"; // update import
+
+  
 
 export default function SolarWindsForm({ onBackToDashboard }) {
+  const [submitted, setSubmitted] = useState(false); // success message control
+
   const {
     step,
     formData,
@@ -17,12 +22,14 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleSubmit
   } = useDailyCheckForm();
 
-  const handleFinalSubmit = () => {
-    handleSubmit();
-    console.log("Form submitted:", formData);
-    onBackToDashboard(); // Redirect to dashboard after submission
-  };
-
+ const handleFinalSubmit = () => {
+  handleSubmit();
+  setSubmitted(true);
+  setTimeout(() => {
+    onBackToDashboard(); // redirect after delay
+  }, 2000);
+};
+f
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 relative">
       {/* Home Button */}
@@ -37,6 +44,11 @@ export default function SolarWindsForm({ onBackToDashboard }) {
         <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
       </div>
       <h1 className="text-3xl font-bold mb-4 text-center">Daily Infrastructure Check</h1>
+      {submitted && (
+        <p className="text-green-600 text-center font-semibold mb-4">
+          ✅ Submission successful! Redirecting to dashboard...
+        </p>
+      )}
 
       {step === 1 && (
         <div className="space-y-4">
