@@ -5,10 +5,10 @@ export default function Dashboard({ onSelectModule }) {
   const modules = [
     { id: "solarwinds", title: "SolarWinds Checks" },
     { id: "vsan", title: "VMware vSAN Checks" },
-    { id: "backups", title: "Backup Verification" },
-    { id: "security", title: "Security Events" },
-    { id: "patches", title: "Patching Summary" },
-    { id: "custom", title: "Custom Notes" }
+    { id: "backups", title: "Checkpoint Checks" },
+    { id: "security", title: "Veeam Checks" },
+    { id: "patches", title: "Known Issues" },
+    { id: "custom", title: "Projects" }
   ];
 
   return (
