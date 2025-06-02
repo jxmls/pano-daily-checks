@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import SplashScreen from "./components/SplashScreen";
+import LoginScreen from './components/LoginScreen';
 import Dashboard from "./components/Dashboard";
 import MultiStepForm from "./components/MultiStepForm";
 
@@ -21,7 +21,7 @@ function App() {
   };
 
   if (!authenticated) {
-    return <SplashScreen onLogin={handleLogin} />;
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   if (screen === "dashboard") {
