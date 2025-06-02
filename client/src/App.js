@@ -37,3 +37,4 @@ default:
 return <Dashboard onSelectModule={handleSelectModule} />;
 }
 }
+export default App;
