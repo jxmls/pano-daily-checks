@@ -24,9 +24,19 @@ function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  if (screen === "dashboard") {
-    return <Dashboard onSelectModule={handleSelectModule} />;
-  }
+ if (screen === "dashboard") {
+  return (
+    <Dashboard
+      onSelectModule={handleSelectModule}
+      onSignOut={() => {
+        setAuthenticated(false);
+        setUserData({});
+        setScreen("splash"); // or login screen
+      }}
+    />
+  );
+}
+
 
   if (screen === "solarwinds") {
     return (
