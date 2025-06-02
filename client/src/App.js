@@ -15,9 +15,11 @@ function App() {
   };
 
   const handleSelectModule = (module) => {
-    if (screen === "solarwinds") {
-  return <MultiStepForm onBackToDashboard={() => setScreen("dashboard");
-};
+    if (module === "solarwinds") {
+      setScreen("solarwinds");
+    }
+  };
+
     if (module === "solarwinds") {
       setScreen("solarwinds");
     }
@@ -31,11 +33,17 @@ function App() {
     return <Dashboard onSelectModule={handleSelectModule} />;
   }
 
-  if (screen === "solarwinds") {
-    return <MultiStepForm engineer={userData.engineer} date={userData.date} />;
-  }
+ if (screen === "solarwinds") {
+  return (
+    <MultiStepForm
+      engineer={userData.engineer}
+      date={userData.date}
+      onBackToDashboard={() => setScreen("dashboard")}
+    />
+  );
+}
+
 
   return null;
-}
 
 export default App;

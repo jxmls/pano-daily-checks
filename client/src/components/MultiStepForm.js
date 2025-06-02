@@ -10,6 +10,8 @@ export default function MultiStepForm({ onBackToDashboard }) {
     addAlertRow,
     toggleRowSelection,
     deleteSelectedRows,
+    toggleSelectAll,
+    selectAll,
     next,
     prev,
     handleSubmit
@@ -42,12 +44,9 @@ export default function MultiStepForm({ onBackToDashboard }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
       {step === 2 && (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-6">
           <h2 className="text-2xl font-semibold">SolarWinds</h2>
           <p className="text-gray-600">
             SolarWinds can be accessed from your laptop using Always On VPN or via Panoptics RDS. Navigate to:
@@ -101,11 +100,7 @@ export default function MultiStepForm({ onBackToDashboard }) {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border px-2 py-1 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectAll}
-                      onChange={toggleSelectAll}
-                    />
+                    <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
                   </th>
                   <th className="border px-2 py-1">Alert Name</th>
                   <th className="border px-2 py-1">Details</th>
