@@ -29,7 +29,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     onBackToDashboard(); // redirect after delay
   }, 2000);
 };
-f
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 relative">
       {/* Home Button */}
