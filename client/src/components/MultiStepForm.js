@@ -35,10 +35,16 @@ export default function MultiStepForm({ onBackToDashboard }) {
           </p>
 
           <div className="flex gap-4 mt-4">
-            <button onClick={onBackToDashboard} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
+            <button
+              onClick={onBackToDashboard}
+              className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+            >
               Back
             </button>
-            <button onClick={next} className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded">
+            <button
+              onClick={next}
+              className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded"
+            >
               Next
             </button>
           </div>
@@ -46,11 +52,18 @@ export default function MultiStepForm({ onBackToDashboard }) {
       )}
 
       {step === 2 && (
-        <div className="space-y-4 mt-6">
+        <div className="space-y-4">
           <h2 className="text-2xl font-semibold">SolarWinds</h2>
           <p className="text-gray-600">
             SolarWinds can be accessed from your laptop using Always On VPN or via Panoptics RDS. Navigate to:
-            <a href="https://panglsw01" className="text-blue-500 underline ml-1" target="_blank" rel="noreferrer">https://panglsw01</a>
+            <a
+              href="https://panglsw01"
+              className="text-blue-500 underline ml-1"
+              target="_blank"
+              rel="noreferrer"
+            >
+              https://panglsw01
+            </a>
           </p>
           <ul className="list-decimal list-inside text-sm text-gray-500">
             <li>Login to SolarWinds Server.</li>
@@ -61,8 +74,22 @@ export default function MultiStepForm({ onBackToDashboard }) {
           <div>
             <label className="block font-medium mb-1">Are SolarWinds services running?</label>
             <div className="flex gap-4">
-              <label><input type="radio" name="servicesRunning" value="yes" onChange={() => handleChange("solarwinds", "servicesRunning", "yes")} /> Yes</label>
-              <label><input type="radio" name="servicesRunning" value="no" onChange={() => handleChange("solarwinds", "servicesRunning", "no")} /> No</label>
+              <label>
+                <input
+                  type="radio"
+                  name="servicesRunning"
+                  value="yes"
+                  onChange={() => handleChange("solarwinds", "servicesRunning", "yes")}
+                /> Yes
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="servicesRunning"
+                  value="no"
+                  onChange={() => handleChange("solarwinds", "servicesRunning", "no")}
+                /> No
+              </label>
             </div>
           </div>
 
@@ -100,7 +127,11 @@ export default function MultiStepForm({ onBackToDashboard }) {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border px-2 py-1 text-center">
-                    <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={toggleSelectAll}
+                    />
                   </th>
                   <th className="border px-2 py-1">Alert Name</th>
                   <th className="border px-2 py-1">Details</th>
@@ -120,19 +151,39 @@ export default function MultiStepForm({ onBackToDashboard }) {
                       />
                     </td>
                     <td className="border px-2 py-1">
-                      <input className="w-full" value={alert.name} onChange={(e) => handleAlertChange(index, "name", e.target.value)} />
+                      <input
+                        className="w-full"
+                        value={alert.name}
+                        onChange={(e) => handleAlertChange(index, "name", e.target.value)}
+                      />
                     </td>
                     <td className="border px-2 py-1">
-                      <input className="w-full" value={alert.details} onChange={(e) => handleAlertChange(index, "details", e.target.value)} />
+                      <input
+                        className="w-full"
+                        value={alert.details}
+                        onChange={(e) => handleAlertChange(index, "details", e.target.value)}
+                      />
                     </td>
                     <td className="border px-2 py-1">
-                      <input className="w-full" value={alert.time} onChange={(e) => handleAlertChange(index, "time", e.target.value)} />
+                      <input
+                        className="w-full"
+                        value={alert.time}
+                        onChange={(e) => handleAlertChange(index, "time", e.target.value)}
+                      />
                     </td>
                     <td className="border px-2 py-1">
-                      <input className="w-full" value={alert.ticket} onChange={(e) => handleAlertChange(index, "ticket", e.target.value)} />
+                      <input
+                        className="w-full"
+                        value={alert.ticket}
+                        onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
+                      />
                     </td>
                     <td className="border px-2 py-1">
-                      <input className="w-full" value={alert.notes} onChange={(e) => handleAlertChange(index, "notes", e.target.value)} />
+                      <input
+                        className="w-full"
+                        value={alert.notes}
+                        onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -143,19 +194,13 @@ export default function MultiStepForm({ onBackToDashboard }) {
               <button onClick={deleteSelectedRows} className="text-red-600 text-sm">🗑️ Delete Selected</button>
             </div>
           </div>
+
+          <div className="mt-6 flex gap-4">
+            <button onClick={prev} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Back</button>
+            <button onClick={handleSubmit} className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded">Submit</button>
+          </div>
         </div>
       )}
-
-      <div className="mt-6 flex gap-4">
-        {step > 1 && (
-          <button onClick={prev} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Back</button>
-        )}
-        {step < 2 ? (
-          <button onClick={next} className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded">Next</button>
-        ) : (
-          <button onClick={handleSubmit} className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded">Submit</button>
-        )}
-      </div>
     </div>
   );
 }
