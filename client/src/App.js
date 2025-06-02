@@ -4,34 +4,36 @@ import Dashboard from "./components/Dashboard";
 import MultiStepForm from "./components/MultiStepForm";
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [screen, setScreen] = useState("login");
+const [authenticated, setAuthenticated] = useState(false);
+const [screen, setScreen] = useState("login");
 
-  const handleLogin = (userData) => {
-    setAuthenticated(true);
-    setScreen("dashboard");
-    console.log("Logged in:", userData);
-  };
+const handleLogin = (userData) => {
+setAuthenticated(true);
+setScreen("dashboard");
+console.log("Logged in:", userData);
+};
 
-  const handleSelectModule = (module) => {
-    if (module === "solarwinds") {
-      setScreen("solarwinds");
-    }
-  };
+const handleSelectModule = (module) => {
+if (module === "solarwinds") {
+setScreen("solarwinds");
+}
+// Future: Add additional routing modules here
+};
 
-  if (!authenticated) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
+const handleBackToDashboard = () => {
+setScreen("dashboard");
+};
 
-  if (screen === "dashboard") {
-    return <Dashboard onSelectModule={handleSelectModule} />;
-  }
-
-  if (screen === "solarwinds") {
-    return <MultiStepForm />;
-  }
-
-  return null;
+if (!authenticated) {
+return <LoginScreen onLogin={handleLogin} />;
 }
 
-export default App;
+switch (screen) {
+case "dashboard":
+return <Dashboard onSelectModule={handleSelectModule} />;
+case "solarwinds":
+return <MultiStepForm onBack={handleBackToDashboard} />;
+default:
+return <Dashboard onSelectModule={handleSelectModule} />;
+}
+}
