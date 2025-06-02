@@ -1,7 +1,7 @@
 import React from "react";
 import useDailyCheckForm from "./useDailyCheckForm";
 
-export default function MultiStepForm() {
+export default function MultiStepForm({ onBackToDashboard }) {
   const {
     step,
     formData,
@@ -9,12 +9,10 @@ export default function MultiStepForm() {
     handleAlertChange,
     addAlertRow,
     toggleRowSelection,
-    toggleSelectAll,
     deleteSelectedRows,
     next,
     prev,
-    handleSubmit,
-    selectAll
+    handleSubmit
   } = useDailyCheckForm();
 
   return (
@@ -32,9 +30,23 @@ export default function MultiStepForm() {
               <li>SolarWinds</li>
               <li>VMware vSAN</li>
             </ul>
-          </p>         
+          </p>
+
+          <div className="flex gap-4 mt-4">
+            <button onClick={onBackToDashboard} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
+              Back
+            </button>
+            <button onClick={next} className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded">
+              Next
+            </button>
+          </div>
         </div>
       )}
+
+      {/* keep the rest of your steps unchanged */}
+    </div>
+  );
+}
 
       {step === 2 && (
         <div className="space-y-4">

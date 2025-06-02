@@ -15,6 +15,9 @@ function App() {
   };
 
   const handleSelectModule = (module) => {
+    if (screen === "solarwinds") {
+  return <MultiStepForm onBackToDashboard={() => setScreen("dashboard")} />;
+};
     if (module === "solarwinds") {
       setScreen("solarwinds");
     }
