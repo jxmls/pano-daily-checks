@@ -32,29 +32,7 @@ export default function MultiStepForm() {
               <li>SolarWinds</li>
               <li>VMware vSAN</li>
             </ul>
-          </p>
-          <div>
-            <label className="block font-medium mb-1">Date</label>
-            <input
-              type="date"
-              className="w-full border rounded px-3 py-2"
-              value={formData.date}
-              onChange={(e) => handleChange("main", "date", e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Engineer</label>
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={formData.engineer}
-              onChange={(e) => handleChange("main", "engineer", e.target.value)}
-            >
-              <option value="">Select engineer</option>
-              <option value="Jose Lucar">Jose Lucar</option>
-              <option value="Alex Field">Alex Field</option>
-              <option value="Mihir Sangani">Mihir Sangani</option>
-            </select>
-          </div>
+          </p>         
         </div>
       )}
 
