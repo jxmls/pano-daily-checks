@@ -1,7 +1,7 @@
 import React from "react";
 import useDailyCheckForm from "./useDailyCheckForm";
 
-export default function MultiStepForm({ onBackToDashboard }) {
+export default function SolarWindsForm({ onBackToDashboard }) {
   const {
     step,
     formData,
