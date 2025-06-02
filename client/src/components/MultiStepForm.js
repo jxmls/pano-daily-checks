@@ -42,8 +42,6 @@ export default function MultiStepForm({ onBackToDashboard }) {
           </div>
         </div>
       )}
-
-      {/* keep the rest of your steps unchanged */}
     </div>
   );
 }
