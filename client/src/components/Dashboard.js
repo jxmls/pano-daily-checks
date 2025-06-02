@@ -21,7 +21,7 @@ export default function Dashboard({ onSelectModule, onSignOut }) {
         >
           SolarWinds Checks
         </button>
-        {/* Add more module buttons here */}
+        {/* Add more module buttons here if needed */}
       </div>
     </div>
   );
