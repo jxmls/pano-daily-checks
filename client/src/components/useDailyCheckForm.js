@@ -15,18 +15,15 @@ export default function useDailyCheckForm() {
   });
 
   const handleChange = (section, field, value) => {
-    if (section === "main") {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value
-        }
-      }));
-    }
-  };
+  setFormData((prev) => ({
+    ...prev,
+    [section]: {
+      ...prev[section],
+      [field]: value,
+    },
+  }));
+};
+
 
   const handleAlertChange = (index, field, value) => {
     const newAlerts = [...formData.solarwinds.alerts];

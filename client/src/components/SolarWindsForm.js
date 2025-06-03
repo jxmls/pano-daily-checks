@@ -1,7 +1,27 @@
 import React, { useState } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
+import { useEffect } from "react";
 
+useEffect(() => {
+  fetch("/api/solarwinds-alerts")
+    .then((res) => res.json())
+    .then((data) => {
+      const formatted = data.map(alert => ({
+        name: alert.AlertName || "",
+        details: alert.TriggeringObject || "",
+        time: alert.TriggeredDateTime || "",
+        ticket: "",
+        notes: "",
+        selected: false
+      }));
+      handleChange("solarwinds", "alerts", formatted);
+    })
+    .catch((err) => {
+      console.error("Failed to load SolarWinds alerts:", err);
+      toast.error("⚠️ Could not load alerts");
+    });
+}, []);
 
   
 
