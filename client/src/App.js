@@ -1,4 +1,4 @@
-import VmwareForm from './components/vmwareForm';
+import VmwareForm from './components/VmwareForm';
 import React, { useState } from "react";
 import LoginScreen from './components/LoginScreen';
 import Dashboard from "./components/Dashboard";
