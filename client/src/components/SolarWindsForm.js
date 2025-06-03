@@ -1,32 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
-import { useEffect } from "react";
-
-useEffect(() => {
-  fetch("/api/solarwinds-alerts")
-    .then((res) => res.json())
-    .then((data) => {
-      const formatted = data.map(alert => ({
-        name: alert.AlertName || "",
-        details: alert.TriggeringObject || "",
-        time: alert.TriggeredDateTime || "",
-        ticket: "",
-        notes: "",
-        selected: false
-      }));
-      handleChange("solarwinds", "alerts", formatted);
-    })
-    .catch((err) => {
-      console.error("Failed to load SolarWinds alerts:", err);
-      toast.error("⚠️ Could not load alerts");
-    });
-}, []);
-
-  
 
 export default function SolarWindsForm({ onBackToDashboard }) {
-  const [submitted, setSubmitted] = useState(false); // success message control
+  const [submitted, setSubmitted] = useState(false);
 
   const {
     step,
@@ -42,39 +19,62 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     prev,
     handleSubmit
   } = useDailyCheckForm();
-  const handleFinalSubmit = () => {
-  toast(
-    (t) => (
-      <div className="text-center">
-        <p className="mb-2 font-semibold">Are you sure you're ready to submit?</p>
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              handleSubmit();
-              setSubmitted(true);
-              toast.success("✅ Submission successful!");
-              setTimeout(() => {
-                onBackToDashboard();
-              }, 2000);
-            }}
-            className="bg-green-600 text-white px-3 py-1 rounded text-sm"
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="bg-gray-300 px-3 py-1 rounded text-sm"
-          >
-            No
-          </button>
-        </div>
-      </div>
-    ),
-    { duration: 5000 }
-  );
-};
 
+  // ✅ Fetch SolarWinds alerts from backend
+  useEffect(() => {
+    fetch("/api/solarwinds-alerts")
+      .then((res) => res.json())
+      .then((data) => {
+        const formatted = data.map((alert) => ({
+          name: alert.AlertName || "",
+          details: alert.TriggeringObject || "",
+          time: alert.TriggeredDateTime || "",
+          ticket: "",
+          notes: "",
+          selected: false,
+        }));
+        handleChange("solarwinds", "alerts", formatted);
+      })
+      .catch((err) => {
+        console.error("Failed to load SolarWinds alerts:", err);
+        toast.error("⚠️ Could not load alerts");
+      });
+  }, [handleChange]);
+
+  const handleFinalSubmit = () => {
+    toast(
+      (t) => (
+        <div className="text-center">
+          <p className="mb-2 font-semibold">Are you sure you're ready to submit?</p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                handleSubmit();
+                setSubmitted(true);
+                toast.success("✅ Submission successful!");
+                setTimeout(() => {
+                  onBackToDashboard();
+                }, 2000);
+              }}
+              className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="bg-gray-300 px-3 py-1 rounded text-sm"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 5000 }
+    );
+  };
+
+  // ✅ Leave your full return JSX below unchanged
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 relative">
       <Toaster position="top-center" reverseOrder={false} />
