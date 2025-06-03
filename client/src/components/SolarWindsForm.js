@@ -21,8 +21,10 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     prev,
     handleSubmit
   } = useDailyCheckForm();
+  const handleFinalSubmit = () => {
+  const confirmed = window.confirm("Are you sure you are ready to submit?");
+  if (!confirmed) return;
 
- const handleFinalSubmit = () => {
   handleSubmit();
   setSubmitted(true);
   setTimeout(() => {
