@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
 
 
@@ -22,18 +23,41 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleSubmit
   } = useDailyCheckForm();
   const handleFinalSubmit = () => {
-  const confirmed = window.confirm("Are you sure you are ready to submit?");
-  if (!confirmed) return;
-
-  handleSubmit();
-  setSubmitted(true);
-  setTimeout(() => {
-    onBackToDashboard(); // redirect after delay
-  }, 2000);
+  toast(
+    (t) => (
+      <div className="text-center">
+        <p className="mb-2 font-semibold">Are you sure you're ready to submit?</p>
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              handleSubmit();
+              setSubmitted(true);
+              toast.success("✅ Submission successful!");
+              setTimeout(() => {
+                onBackToDashboard();
+              }, 2000);
+            }}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-gray-300 px-3 py-1 rounded text-sm"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ),
+    { duration: 5000 }
+  );
 };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 relative">
+      <Toaster position="top-center" reverseOrder={false} />
       {/* Home Button */}
       <button
         onClick={onBackToDashboard}
