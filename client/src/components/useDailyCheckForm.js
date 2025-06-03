@@ -16,6 +16,9 @@ export default function useDailyCheckForm() {
   });
 
   const handleChange = (section, field, value) => {
+  if (field === null) {
+    setFormData((prev) => ({ ...prev, [section]: value }));
+  } else {
     setFormData((prev) => ({
       ...prev,
       [section]: {
@@ -23,7 +26,9 @@ export default function useDailyCheckForm() {
         [field]: value,
       },
     }));
-  };
+  }
+};
+
 
   const handleAlertChange = (index, field, value) => {
     const alerts = formData.solarwinds.alerts || [];
