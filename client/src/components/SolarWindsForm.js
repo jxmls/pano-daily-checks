@@ -261,7 +261,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
               const body = encodeURIComponent(
                 `Client: ${formData.solarwinds.client || 'Multiple'}\n` +
                 `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-                `Trigger Time: ${alert.time}\nTicket: ${alert.ticket}\nNotes: ${alert.notes}`
+                `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer}\nNotes: ${alert.notes}`
               );
               window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
             }}
