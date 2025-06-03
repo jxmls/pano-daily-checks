@@ -49,7 +49,7 @@ app.get("/api/submissions", async (req, res) => {
 
 // ✅ 🔹 NEW: API route to serve SolarWinds alerts
 app.get("/api/solarwinds-alerts", (req, res) => {
-  const filePath = path.join(__dirname, "alerts", "solarwinds.json");
+  const filePath = path.join(__dirname, "api", "alerts", "solarwinds.json");
   fs.readFile(filePath, "utf8", (err, data) => {
     if (err) {
       console.error("Failed to read SolarWinds alert file:", err);
