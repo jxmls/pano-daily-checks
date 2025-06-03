@@ -23,24 +23,30 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
   // ✅ Fetch SolarWinds alerts from backend
   useEffect(() => {
-    fetch("/api/solarwinds-alerts")
-      .then((res) => res.json())
-      .then((data) => {
-        const formatted = data.map(alert => ({
-          name: alert.AlertName || "",
-          details: alert.TriggeringObject || "",
-          time: alert.TriggeredDateTime || "",
-          ticket: "",
-          notes: "",
-          selected: false
-        }));
-        handleChange("solarwinds", "alerts", formatted);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to load SolarWinds alerts:", err);
-        toast.error("⚠️ Could not load alerts");
-      });
-  }, []);
+  const storedName = localStorage.getItem("engineerName");
+  if (storedName) {
+    handleChange("engineer", null, storedName);
+  }
+
+  fetch("/api/solarwinds-alerts")
+    .then((res) => res.json())
+    .then((data) => {
+      const formatted = data.map(alert => ({
+        name: alert.AlertName || "",
+        details: alert.TriggeringObject || "",
+        time: alert.TriggeredDateTime || "",
+        ticket: "",
+        notes: "",
+        selected: false
+      }));
+      handleChange("solarwinds", "alerts", formatted);
+    })
+    .catch((err) => {
+      console.error("❌ Failed to load SolarWinds alerts:", err);
+      toast.error("⚠️ Could not load alerts");
+    });
+}, []);
+
 
   const handleFinalSubmit = () => {
     toast(
@@ -105,11 +111,10 @@ export default function SolarWindsForm({ onBackToDashboard }) {
             <input
               type="text"
               className="w-full border rounded px-3 py-2"
-              placeholder="Enter your name"
               value={formData.engineer || ""}
-             onChange={(e) => handleChange("engineer", null, e.target.value)}
-
+              readOnly
             />
+
           </div>
 
           <div className="flex gap-4 mt-4">
