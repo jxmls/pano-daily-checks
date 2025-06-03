@@ -22,24 +22,25 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
   // ✅ Fetch SolarWinds alerts from backend
   useEffect(() => {
-  fetch("/api/solarwinds-alerts")
-    .then((res) => res.json())
-    .then((data) => {
-      const formatted = data.map(alert => ({
-        name: alert.AlertName || "",
-        details: alert.TriggeringObject || "",
-        time: alert.TriggeredDateTime || "",
-        ticket: "",
-        notes: "",
-        selected: false
-      }));
-      handleChange("solarwinds", "alerts", formatted);
-    })
-    .catch((err) => {
-      console.error("❌ Failed to load SolarWinds alerts:", err);
-      toast.error("⚠️ Could not load alerts");
-    });
-}, []);
+    fetch("/api/solarwinds-alerts")
+      .then((res) => res.json())
+      .then((data) => {
+        const formatted = data.map(alert => ({
+          name: alert.AlertName || "",
+          details: alert.TriggeringObject || "",
+          time: alert.TriggeredDateTime || "",
+          ticket: "",
+          notes: "",
+          selected: false
+        }));
+        handleChange("solarwinds", "alerts", formatted);
+      })
+      .catch((err) => {
+        console.error("❌ Failed to load SolarWinds alerts:", err);
+        toast.error("⚠️ Could not load alerts");
+      });
+  }, []);
+
   const handleFinalSubmit = () => {
     toast(
       (t) => (
@@ -73,11 +74,9 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     );
   };
 
-  // ✅ Leave your full return JSX below unchanged
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 relative">
       <Toaster position="top-center" reverseOrder={false} />
-      {/* Home Button */}
       <button
         onClick={onBackToDashboard}
         className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded"
@@ -89,7 +88,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
         <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
       </div>
       <h1 className="text-3xl font-bold mb-4 text-center">Daily Infrastructure Check</h1>
-      
+
       {step === 1 && (
         <div className="space-y-4">
           <p className="text-gray-600 mb-4">
@@ -99,6 +98,17 @@ export default function SolarWindsForm({ onBackToDashboard }) {
               <li>VMware vSAN</li>
             </ul>
           </p>
+
+          <div>
+            <label className="block font-medium mb-1">Engineer Name</label>
+            <input
+              type="text"
+              className="w-full border rounded px-3 py-2"
+              placeholder="Enter your name"
+              value={formData.engineer || ""}
+              onChange={(e) => handleChange("engineer", null, e.target.value)}
+            />
+          </div>
 
           <div className="flex gap-4 mt-4">
             <button
@@ -207,73 +217,72 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 </tr>
               </thead>
               <tbody>
-  {formData.solarwinds.alerts.map((alert, index) => (
-    <tr key={index}>
-      <td className="border px-2 py-1 text-center">
-        <input
-          type="checkbox"
-          checked={alert.selected || false}
-          onChange={() => toggleRowSelection(index)}
-        />
-      </td>
-      <td className="border px-2 py-1">
-        <input
-          className="w-full"
-          value={alert.name}
-          onChange={(e) => handleAlertChange(index, "name", e.target.value)}
-        />
-      </td>
-      <td className="border px-2 py-1">
-        <input
-          className="w-full"
-          value={alert.details}
-          onChange={(e) => handleAlertChange(index, "details", e.target.value)}
-        />
-      </td>
-      <td className="border px-2 py-1">
-        <input
-          className="w-full"
-          value={alert.time}
-          onChange={(e) => handleAlertChange(index, "time", e.target.value)}
-        />
-      </td>
-      <td className="border px-2 py-1">
-        <input
-          className="w-full"
-          value={alert.ticket}
-          onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
-        />
-      </td>
-      <td className="border px-2 py-1">
-        <input
-          className="w-full"
-          value={alert.notes}
-          onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
-        />
-      </td>
-      {alert.selected && (
-        <td className="border px-2 py-1 text-center">
-          <button
-            className="text-blue-600 hover:underline text-sm"
-            onClick={(e) => {
-              e.preventDefault();
-              const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
-              const body = encodeURIComponent(
-                `Client: ${formData.solarwinds.client || 'Multiple'}\n` +
-                `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-                `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer}\nNotes: ${alert.notes}`
-              );
-              window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
-            }}
-          >
-            📧 Create Ticket
-          </button>
-        </td>
-      )}
-    </tr>
-  ))}
-</tbody>
-
+                {formData.solarwinds.alerts.map((alert, index) => (
+                  <tr key={index}>
+                    <td className="border px-2 py-1 text-center">
+                      <input
+                        type="checkbox"
+                        checked={alert.selected || false}
+                        onChange={() => toggleRowSelection(index)}
+                      />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input
+                        className="w-full"
+                        value={alert.name}
+                        onChange={(e) => handleAlertChange(index, "name", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input
+                        className="w-full"
+                        value={alert.details}
+                        onChange={(e) => handleAlertChange(index, "details", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input
+                        className="w-full"
+                        value={alert.time}
+                        onChange={(e) => handleAlertChange(index, "time", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input
+                        className="w-full"
+                        value={alert.ticket}
+                        onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2 py-1">
+                      <input
+                        className="w-full"
+                        value={alert.notes}
+                        onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
+                      />
+                    </td>
+                    {alert.selected && (
+                      <td className="border px-2 py-1 text-center">
+                        <button
+                          className="text-blue-600 hover:underline text-sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
+                            const body = encodeURIComponent(
+                              `Client: ${formData.solarwinds.client || 'Multiple'}\n` +
+                              `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
+                              `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer || 'Unknown'}\nNotes: ${alert.notes}`
+                            );
+                            window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
+                          }}
+                        >
+                          📧 Create Ticket
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
             </table>
             <div className="flex gap-4 mt-2">
               <button onClick={addAlertRow} className="text-blue-600 text-sm">➕ Add Row</button>
