@@ -8,6 +8,10 @@ export default function SplashScreen({ onLogin }) {
 
   const handleLogin = () => {
     if (password === "HotFix991!") {
+      // ✅ Save engineer name to localStorage
+      localStorage.setItem("engineerName", engineer);
+      localStorage.setItem("checkDate", date);
+      
       onLogin(engineer, date);
     } else {
       setError("Incorrect password. Please try again.");
