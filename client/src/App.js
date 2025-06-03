@@ -53,7 +53,7 @@ function App() {
 
   if (screen === "vsan") {
     return (
-      <VSANForm
+      <VmwareForm
         engineer={userData.engineer}
         date={userData.date}
         onBackToDashboard={() => setScreen("dashboard")}
