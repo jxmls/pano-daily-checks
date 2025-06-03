@@ -2,11 +2,11 @@ import React from "react";
 
 const modules = [
   { id: "solarwinds", title: "SolarWinds Checks" },
-  { id: "vsan", title: "VMWare vSAN Checks" },
-  { id: "veeam", title: "Veeam Checks" },
-  { id: "network", title: "Checkpoint Checks" },
-  { id: "intune", title: "Known issues" },
-  { id: "custom", title: "Projects" },
+  { id: "vsan", title: "vSAN Health" },
+  { id: "veeam", title: "Veeam Backup Status" },
+  { id: "network", title: "Network Alerts" },
+  { id: "intune", title: "Intune Compliance" },
+  { id: "custom", title: "Custom Checks" },
 ];
 
 export default function Dashboard({ onSelectModule, onSignOut }) {
