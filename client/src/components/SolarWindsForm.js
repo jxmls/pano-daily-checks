@@ -8,6 +8,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   const {
     step,
     formData,
+    setFormData,
     handleChange,
     handleAlertChange,
     addAlertRow,

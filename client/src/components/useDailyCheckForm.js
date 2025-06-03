@@ -115,6 +115,7 @@ export default function useDailyCheckForm() {
   return {
     step,
     formData,
+    setFormData,
     handleChange,
     handleAlertChange,
     addAlertRow,
