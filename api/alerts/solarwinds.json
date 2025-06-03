@@ -1,7 +1,27 @@
-[
-  {
-    "AlertName": "Critical Node is down",
-    "TriggeringObject": "BREWERY - BREW-CR01",
-    "TriggeredDateTime": "2025-06-03T11:12:00"
-  }
+﻿[
+    {
+        "AlertName":  "24x7 Serious Node rebooted",
+        "TriggeringObject":  "CV1VOLPRT001",
+        "TriggeredDateTime":  "2025-06-03 14:19:35"
+    },
+    {
+        "AlertName":  "24x7 Serious Node rebooted",
+        "TriggeringObject":  "CLARION - NL - NL-FW-Pri",
+        "TriggeredDateTime":  "2025-06-03 14:05:24"
+    },
+    {
+        "AlertName":  "Hardware component is in critical state",
+        "TriggeringObject":  "LSQ - ESX2",
+        "TriggeredDateTime":  "2025-06-03 11:39:59"
+    },
+    {
+        "AlertName":  "Hardware component is in critical state",
+        "TriggeringObject":  "LSQ - ESX2",
+        "TriggeredDateTime":  "2025-06-03 11:39:59"
+    },
+    {
+        "AlertName":  "Hardware component is in critical state",
+        "TriggeringObject":  "LSQ - ESX2",
+        "TriggeredDateTime":  "2025-06-03 11:39:59"
+    }
 ]
