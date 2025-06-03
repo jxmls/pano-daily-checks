@@ -1,6 +1,7 @@
 // server.js
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const { PrismaClient } = require("@prisma/client");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -16,7 +17,7 @@ app.use(bodyParser.json());
 // Serve static files from client build
 app.use(express.static(path.join(__dirname, "client", "build")));
 
-// 🔹 API route to handle submission
+// 🔹 API route: form submission
 app.post("/api/submit", async (req, res) => {
   const { date, engineer, solarwinds, vsan } = req.body;
   try {
@@ -36,7 +37,7 @@ app.post("/api/submit", async (req, res) => {
   }
 });
 
-// 🔹 API route to view submissions
+// 🔹 API route: get all submissions
 app.get("/api/submissions", async (req, res) => {
   try {
     const submissions = await prisma.submission.findMany({ orderBy: { date: "desc" } });
@@ -44,6 +45,23 @@ app.get("/api/submissions", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ✅ 🔹 NEW: API route to serve SolarWinds alerts
+app.get("/api/solarwinds-alerts", (req, res) => {
+  const filePath = path.join(__dirname, "alerts", "solarwinds.json");
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      console.error("Failed to read SolarWinds alert file:", err);
+      return res.status(500).json({ error: "Could not read alerts file" });
+    }
+    try {
+      const json = JSON.parse(data);
+      res.json(json);
+    } catch (parseErr) {
+      res.status(500).json({ error: "Invalid JSON in alert file" });
+    }
+  });
 });
 
 // 🔸 Catch-all: serve frontend

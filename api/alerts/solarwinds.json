@@ -1,0 +1,8 @@
+// api/alerts/solarwinds.json
+[
+  {
+    "AlertName": "Critical Node is down",
+    "TriggeringObject": "BREWERY - BREW-CR01",
+    "TriggeredDateTime": "2025-06-03T11:12:00"
+  }
+]
