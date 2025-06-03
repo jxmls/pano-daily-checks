@@ -50,18 +50,21 @@ app.get("/api/submissions", async (req, res) => {
 app.get("/api/solarwinds-alerts", (req, res) => {
   const filePath = path.join(__dirname, "api", "alerts", "solarwinds.json");
   fs.readFile(filePath, "utf8", (err, data) => {
-    if (err) {
-      console.error("❌ Failed to read solarwinds.json:", err);
-      return res.status(500).json({ error: "Could not read alerts file" });
-    }
-    try {
-      const json = JSON.parse(data);
-      res.json(json);
-    } catch (parseErr) {
-      console.error("❌ Invalid JSON format in solarwinds.json:", parseErr);
-      res.status(500).json({ error: "Invalid JSON in alert file" });
-    }
-  });
+  if (err) {
+    console.error("Failed to read SolarWinds alert file:", err);
+    return res.status(500).json({ error: "Could not read alerts file" });
+  }
+
+  console.log("🔍 Raw file contents:\n", data); // 👈 Add this line
+
+  try {
+    const json = JSON.parse(data);
+    res.json(json);
+  } catch (parseErr) {
+    console.error("❌ JSON parse error:", parseErr.message);
+    res.status(500).json({ error: "Invalid JSON in alert file" });
+  }
+});
 });
 
 // 🔸 Catch-all: serve frontend
