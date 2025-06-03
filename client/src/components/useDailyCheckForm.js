@@ -12,94 +12,108 @@ export default function useDailyCheckForm() {
       client: "",
       alertType: "",
       alerts: []
+    },
+    vsan: {
+      client: "",
+      alert: "",
+      alerts: []
     }
   });
 
   const handleChange = (section, field, value) => {
-  if (field === null) {
-    setFormData((prev) => ({ ...prev, [section]: value }));
-  } else {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
-  }
-};
-
+    if (field === null) {
+      setFormData((prev) => ({ ...prev, [section]: value }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: value,
+        },
+      }));
+    }
+  };
 
   const handleAlertChange = (index, field, value) => {
-    const alerts = formData.solarwinds.alerts || [];
+    const targetSection = formData.solarwinds.alerts.length > 0 ? "solarwinds" : "vsan";
+    const alerts = formData[targetSection].alerts || [];
     const newAlerts = [...alerts];
     newAlerts[index][field] = value;
     setFormData((prev) => ({
       ...prev,
-      solarwinds: {
-        ...prev.solarwinds,
+      [targetSection]: {
+        ...prev[targetSection],
         alerts: newAlerts,
       },
     }));
   };
 
   const addAlertRow = () => {
-    const newAlert = {
+    const targetSection = step === 2 ? "solarwinds" : "vsan";
+    const newAlert = targetSection === "solarwinds" ? {
       name: "",
       details: "",
       time: "",
       ticket: "",
       notes: "",
-      selected: false,
+      selected: false
+    } : {
+      host: "",
+      type: "",
+      details: "",
+      selected: false
     };
     setFormData((prev) => ({
       ...prev,
-      solarwinds: {
-        ...prev.solarwinds,
-        alerts: [...(prev.solarwinds.alerts || []), newAlert],
-      },
+      [targetSection]: {
+        ...prev[targetSection],
+        alerts: [...(prev[targetSection].alerts || []), newAlert]
+      }
     }));
   };
 
   const toggleRowSelection = (index) => {
-    const alerts = formData.solarwinds.alerts || [];
+    const targetSection = step === 2 ? "solarwinds" : "vsan";
+    const alerts = formData[targetSection].alerts || [];
     const newAlerts = [...alerts];
     newAlerts[index].selected = !newAlerts[index].selected;
     setFormData((prev) => ({
       ...prev,
-      solarwinds: {
-        ...prev.solarwinds,
-        alerts: newAlerts,
-      },
+      [targetSection]: {
+        ...prev[targetSection],
+        alerts: newAlerts
+      }
     }));
   };
 
   const toggleSelectAll = () => {
+    const targetSection = step === 2 ? "solarwinds" : "vsan";
     const newSelectAll = !selectAll;
-    const newAlerts = (formData.solarwinds.alerts || []).map((alert) => ({
+    const newAlerts = (formData[targetSection].alerts || []).map((alert) => ({
       ...alert,
-      selected: newSelectAll,
+      selected: newSelectAll
     }));
     setSelectAll(newSelectAll);
     setFormData((prev) => ({
       ...prev,
-      solarwinds: {
-        ...prev.solarwinds,
-        alerts: newAlerts,
-      },
+      [targetSection]: {
+        ...prev[targetSection],
+        alerts: newAlerts
+      }
     }));
   };
 
   const deleteSelectedRows = () => {
-    const filteredAlerts = (formData.solarwinds.alerts || []).filter(
+    const targetSection = step === 2 ? "solarwinds" : "vsan";
+    const filteredAlerts = (formData[targetSection].alerts || []).filter(
       (alert) => !alert.selected
     );
     setFormData((prev) => ({
       ...prev,
-      solarwinds: {
-        ...prev.solarwinds,
-        alerts: filteredAlerts,
-      },
+      [targetSection]: {
+        ...prev[targetSection],
+        alerts: filteredAlerts
+      }
     }));
     setSelectAll(false);
   };
@@ -109,7 +123,7 @@ export default function useDailyCheckForm() {
 
   const handleSubmit = () => {
     console.log("📤 Submitting form data:", formData);
-    // Replace this with actual API call logic later
+    // Replace with actual API call
   };
 
   return {
@@ -125,6 +139,6 @@ export default function useDailyCheckForm() {
     next,
     prev,
     handleSubmit,
-    selectAll,
+    selectAll
   };
 }
