@@ -302,10 +302,21 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   </tbody>
 </table>
 
-            <div className="flex gap-4 mt-2">
-              <button onClick={addAlertRow} className="text-blue-600 text-sm">➕ Add Row</button>
-              <button onClick={deleteSelectedRows} className="text-red-600 text-sm">🗑️ Delete Selected</button>
-            </div>
+            <div className="flex gap-4 mt-4">
+  <button
+    onClick={addAlertRow}
+    className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
+  >
+    ➕ Add Row
+  </button>
+  <button
+    onClick={deleteSelectedRows}
+    className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
+  >
+    🗑️ Delete Selected
+  </button>
+</div>
+
           </div>
 
           <div className="mt-6 flex gap-4">
