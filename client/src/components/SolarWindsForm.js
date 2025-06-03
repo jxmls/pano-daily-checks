@@ -70,12 +70,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
         <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
       </div>
       <h1 className="text-3xl font-bold mb-4 text-center">Daily Infrastructure Check</h1>
-      {submitted && (
-        <p className="text-green-600 text-center font-semibold mb-4">
-          ✅ Submission successful! Redirecting to dashboard...
-        </p>
-      )}
-
+      
       {step === 1 && (
         <div className="space-y-4">
           <p className="text-gray-600 mb-4">
