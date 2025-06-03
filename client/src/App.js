@@ -1,3 +1,4 @@
+import VmwareForm from './components/vmwareForm';
 import React, { useState } from "react";
 import LoginScreen from './components/LoginScreen';
 import Dashboard from "./components/Dashboard";
@@ -46,6 +47,16 @@ function App() {
         onBackToDashboard={() => setScreen("dashboard")}
       />
     );
+  if (screen === "vsan") {
+  return (
+    <VmwareForm
+      engineer={userData.engineer}
+      date={userData.date}
+      onBackToDashboard={() => setScreen("dashboard")}
+    />
+  );
+}
+
   }
 
   return null;
