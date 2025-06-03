@@ -2,12 +2,9 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const { PrismaClient } = require("@prisma/client");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-
 const app = express();
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
