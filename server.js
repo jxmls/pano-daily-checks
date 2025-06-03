@@ -33,6 +33,7 @@ app.post("/api/submit", async (req, res) => {
     });
     res.status(201).json({ success: true, submission });
   } catch (err) {
+    console.error("❌ Failed to save submission:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -43,22 +44,24 @@ app.get("/api/submissions", async (req, res) => {
     const submissions = await prisma.submission.findMany({ orderBy: { date: "desc" } });
     res.json(submissions);
   } catch (err) {
+    console.error("❌ Failed to retrieve submissions:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ 🔹 NEW: API route to serve SolarWinds alerts
+// ✅ API route to serve SolarWinds alerts (corrected path)
 app.get("/api/solarwinds-alerts", (req, res) => {
   const filePath = path.join(__dirname, "api", "alerts", "solarwinds.json");
   fs.readFile(filePath, "utf8", (err, data) => {
     if (err) {
-      console.error("Failed to read SolarWinds alert file:", err);
+      console.error("❌ Failed to read solarwinds.json:", err);
       return res.status(500).json({ error: "Could not read alerts file" });
     }
     try {
       const json = JSON.parse(data);
       res.json(json);
     } catch (parseErr) {
+      console.error("❌ Invalid JSON format in solarwinds.json:", parseErr);
       res.status(500).json({ error: "Invalid JSON in alert file" });
     }
   });
