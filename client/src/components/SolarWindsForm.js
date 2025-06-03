@@ -22,25 +22,24 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
   // ✅ Fetch SolarWinds alerts from backend
   useEffect(() => {
-    fetch("/api/solarwinds-alerts")
-      .then((res) => res.json())
-      .then((data) => {
-        const formatted = data.map((alert) => ({
-          name: alert.AlertName || "",
-          details: alert.TriggeringObject || "",
-          time: alert.TriggeredDateTime || "",
-          ticket: "",
-          notes: "",
-          selected: false,
-        }));
-        handleChange("solarwinds", "alerts", formatted);
-      })
-      .catch((err) => {
-        console.error("Failed to load SolarWinds alerts:", err);
-        toast.error("⚠️ Could not load alerts");
-      });
-  }, [handleChange]);
-
+  fetch("/api/solarwinds-alerts")
+    .then((res) => res.json())
+    .then((data) => {
+      const formatted = data.map(alert => ({
+        name: alert.AlertName || "",
+        details: alert.TriggeringObject || "",
+        time: alert.TriggeredDateTime || "",
+        ticket: "",
+        notes: "",
+        selected: false
+      }));
+      handleChange("solarwinds", "alerts", formatted);
+    })
+    .catch((err) => {
+      console.error("❌ Failed to load SolarWinds alerts:", err);
+      toast.error("⚠️ Could not load alerts");
+    });
+}, []);
   const handleFinalSubmit = () => {
     toast(
       (t) => (
