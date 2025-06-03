@@ -22,12 +22,20 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   } = useDailyCheckForm();
 
   // ✅ Fetch SolarWinds alerts from backend
-  useEffect(() => {
-  const storedName = localStorage.getItem("engineerName");
-  if (storedName) {
-    handleChange("engineer", null, storedName);
+ useEffect(() => {
+  // Prefill engineer and date from localStorage
+  const storedEngineer = localStorage.getItem("engineerName");
+  const storedDate = localStorage.getItem("checkDate");
+
+  if (storedEngineer) {
+    handleChange("engineer", null, storedEngineer);
   }
 
+  if (storedDate) {
+    handleChange("date", null, storedDate);
+  }
+
+  // Fetch SolarWinds alerts
   fetch("/api/solarwinds-alerts")
     .then((res) => res.json())
     .then((data) => {
@@ -46,6 +54,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
       toast.error("⚠️ Could not load alerts");
     });
 }, []);
+
 
 
   const handleFinalSubmit = () => {
