@@ -107,7 +107,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
               className="w-full border rounded px-3 py-2"
               placeholder="Enter your name"
               value={formData.engineer || ""}
-              onChange={(e) => setFormData((prev) => ({ ...prev, engineer: e.target.value }))}
+             onChange={(e) => handleChange("engineer", null, e.target.value)}
 
             />
           </div>
