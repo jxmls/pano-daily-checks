@@ -103,7 +103,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
       <div className="flex justify-center mb-4">
         <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
       </div>
-      <h1 className="text-3xl font-bold mb-4 text-center">Daily Infrastructure Check</h1>
+      <h1 className="text-3xl font-bold mb-4 text-center">Solarwinds Checks</h1>
 
       {step === 1 && (
         <div className="space-y-4">
