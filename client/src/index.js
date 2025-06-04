@@ -1,3 +1,4 @@
+import './index.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -12,3 +13,4 @@ root.render(
 );
 
 reportWebVitals();
+<h1 className="text-red-500 text-3xl">Tailwind is working</h1>
