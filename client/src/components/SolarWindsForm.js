@@ -35,25 +35,41 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleChange("date", null, storedDate);
   }
 
- // Fetch SolarWinds alerts
-fetch("/api/solarwinds-alerts")
-  .then((res) => res.json())
-  .then((data) => {
-    const formatted = data.map(alert => ({
-      name: alert.AlertName || "",
-      details: alert.TriggeringObject || "",
-      time: alert.TriggeredDateTime || "",
+useEffect(() => {
+  // Prefill engineer and date from localStorage
+  const storedEngineer = localStorage.getItem("engineerName");
+  const storedDate = localStorage.getItem("checkDate");
+
+  if (storedEngineer) {
+    handleChange("engineer", null, storedEngineer);
+  }
+
+  if (storedDate) {
+    handleChange("date", null, storedDate);
+  }
+
+  // 🔧 Temporarily hardcoded alert data (manual mode)
+  const manualAlerts = [
+    {
+      name: "24x7 Serious Node rebooted",
+      details: "CV1VOLPRT001",
+      time: "2025-06-03 14:19:35",
       ticket: "",
       notes: "",
       selected: false
-    }));
-    handleChange("solarwinds", "alerts", formatted);
-  })
-  .catch((err) => {
-    console.error("❌ Failed to load SolarWinds alerts:", err);
-    toast.error("⚠️ Could not load alerts");
-  });
+    },
+    {
+      name: "Hardware component is in critical state",
+      details: "LSQ - ESX2",
+      time: "2025-06-03 11:39:59",
+      ticket: "",
+      notes: "",
+      selected: false
+    }
+  ];
 
+  handleChange("solarwinds", "alerts", manualAlerts);
+}, []);
 
 
   const handleFinalSubmit = () => {
