@@ -34,7 +34,6 @@ export default function SolarWindsForm({ onBackToDashboard }) {
       handleChange("date", null, storedDate);
     }
 
-    // No preloaded alerts — user enters them manually
     handleChange("solarwinds", "alerts", []);
   }, []);
 
