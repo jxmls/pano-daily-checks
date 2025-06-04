@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
+<div className="bg-black w-full flex items-center justify-center mb-4">
+  <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
+</div>
 
 export default function SolarWindsForm({ onBackToDashboard }) {
   const [submitted, setSubmitted] = useState(false);
