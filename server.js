@@ -45,28 +45,30 @@ app.get("/api/submissions", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// ✅ API route to serve SolarWinds alerts (corrected path)
+// ✅ API route to serve SolarWinds alerts (with BOM fix)
 app.get("/api/solarwinds-alerts", (req, res) => {
   const filePath = path.join(__dirname, "api", "alerts", "solarwinds.json");
+
   fs.readFile(filePath, "utf8", (err, data) => {
-  if (err) {
-    console.error("Failed to read SolarWinds alert file:", err);
-    return res.status(500).json({ error: "Could not read alerts file" });
-  }
+    if (err) {
+      console.error("❌ Failed to read SolarWinds alert file:", err);
+      return res.status(500).json({ error: "Could not read alerts file" });
+    }
 
-  console.log("🔍 Raw file contents:\n", data); // 👈 Add this line
+    // 🔍 Optional debug output
+    console.log("🔍 Raw file contents:\n", data);
 
-  try {
-    const json = JSON.parse(data);
-    res.json(json);
-  } catch (parseErr) {
-    console.error("❌ JSON parse error:", parseErr.message);
-    res.status(500).json({ error: "Invalid JSON in alert file" });
-  }
+    try {
+      // 🧼 Strip Byte Order Mark (BOM) if present
+      const cleanData = data.replace(/^\uFEFF/, "");
+      const json = JSON.parse(cleanData);
+      res.json(json);
+    } catch (parseErr) {
+      console.error("❌ JSON parse error:", parseErr.message);
+      res.status(500).json({ error: "Invalid JSON in alert file" });
+    }
+  });
 });
-});
-
 // 🔸 Catch-all: serve frontend
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "build", "index.html"));
