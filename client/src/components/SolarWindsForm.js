@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
-import Header from "./Header";
 
 export default function SolarWindsForm({ onBackToDashboard }) {
   const [submitted, setSubmitted] = useState(false);
@@ -66,8 +65,19 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   };
 
   return (
-    <div>
-      <Header />
+    <div className="min-h-screen bg-white text-black">
+      <div className="w-full bg-black text-white flex items-center justify-between px-6 py-2">
+        <div className="flex items-center gap-4">
+          <img src="/panologo.png" alt="Panoptics logo" className="h-16" />
+          <button
+            onClick={onBackToDashboard}
+            className="bg-gray-200 text-black px-3 py-1 rounded hover:bg-gray-300 text-sm"
+          >
+            Home
+          </button>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 py-6 relative">
         <Toaster position="top-center" reverseOrder={false} />
         <h1 className="text-3xl font-bold mb-4 text-center">Solarwinds Checks</h1>
@@ -81,7 +91,6 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 <li>VMware vSAN</li>
               </ul>
             </p>
-
             <div>
               <label className="block font-medium mb-1">Engineer Name</label>
               <input
@@ -91,7 +100,6 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 readOnly
               />
             </div>
-
             <div className="flex gap-4 mt-4">
               <button
                 onClick={onBackToDashboard}
@@ -263,7 +271,6 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                   ))}
                 </tbody>
               </table>
-
               <div className="flex gap-4 mt-4">
                 <button
                   onClick={addAlertRow}
@@ -281,8 +288,18 @@ export default function SolarWindsForm({ onBackToDashboard }) {
             </div>
 
             <div className="mt-6 flex gap-4">
-              <button onClick={prev} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Back</button>
-              <button onClick={handleFinalSubmit} className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded">Submit</button>
+              <button
+                onClick={prev}
+                className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleFinalSubmit}
+                className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded"
+              >
+                Submit
+              </button>
             </div>
           </div>
         )}
