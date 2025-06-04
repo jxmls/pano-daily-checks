@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
-<div className="bg-black w-full flex items-center justify-center mb-4">
-  <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
-</div>
+import Header from "./Header"; // adjust path as needed
+
+export default function SolarWindsForm({ onBackToDashboard }) {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 relative">
+      <Header />
+      {/* ...rest of the form... */}
+    </div>
+  );
+}
 
 export default function SolarWindsForm({ onBackToDashboard }) {
   const [submitted, setSubmitted] = useState(false);
+
 
   const {
     step,
