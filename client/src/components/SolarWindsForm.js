@@ -1,3 +1,4 @@
+// SolarWindsForm.js
 import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import useDailyCheckForm from "./useDailyCheckForm";
@@ -18,65 +19,58 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     selectAll,
     next,
     prev,
-    handleSubmit
+    handleSubmit,
   } = useDailyCheckForm();
 
-  // ✅ Prefill engineer/date and start with an empty alert list
   useEffect(() => {
     const storedEngineer = localStorage.getItem("engineerName");
     const storedDate = localStorage.getItem("checkDate");
 
-    if (storedEngineer) handleChange("engineer", null, storedEngineer);
-    if (storedDate) handleChange("date", null, storedDate);
+    if (storedEngineer) {
+      handleChange("engineer", null, storedEngineer);
+    }
 
-    handleChange("solarwinds", "alerts", []); // start with empty alert list
+    if (storedDate) {
+      handleChange("date", null, storedDate);
+    }
+
+    // No preloaded alerts — user enters them manually
+    handleChange("solarwinds", "alerts", []);
   }, []);
 
   const handleFinalSubmit = () => {
-    toast(
-      (t) => (
-        <div className="text-center">
-          <p className="mb-2 font-semibold">Are you sure you're ready to submit?</p>
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                handleSubmit();
-                setSubmitted(true);
-                toast.success("✅ Submission successful!");
-                setTimeout(() => {
-                  onBackToDashboard();
-                }, 2000);
-              }}
-              className="bg-green-600 text-white px-3 py-1 rounded text-sm"
-            >
-              Yes
-            </button>
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="bg-gray-300 px-3 py-1 rounded text-sm"
-            >
-              No
-            </button>
-          </div>
+    toast((t) => (
+      <div className="text-center">
+        <p className="mb-2 font-semibold">Are you sure you're ready to submit?</p>
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              handleSubmit();
+              setSubmitted(true);
+              toast.success("✅ Submission successful!");
+              setTimeout(() => onBackToDashboard(), 2000);
+            }}
+            className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="bg-gray-300 px-3 py-1 rounded text-sm"
+          >
+            No
+          </button>
         </div>
-      ),
-      { duration: 5000 }
-    );
+      </div>
+    ));
   };
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div>
       <Header />
-      <Toaster position="top-center" reverseOrder={false} />
       <div className="max-w-4xl mx-auto px-4 py-6 relative">
-        <button
-          onClick={onBackToDashboard}
-          className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded"
-        >
-          Home
-        </button>
-
+        <Toaster position="top-center" reverseOrder={false} />
         <h1 className="text-3xl font-bold mb-4 text-center">Solarwinds Checks</h1>
 
         {step === 1 && (
@@ -192,17 +186,13 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 <thead className="bg-gray-100 text-gray-700">
                   <tr>
                     <th className="border px-3 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
-                      />
+                      <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
                     </th>
-                    <th className="border px-3 py-2 text-left">Alert Name</th>
-                    <th className="border px-3 py-2 text-left">Details</th>
-                    <th className="border px-3 py-2 text-left">Trigger Time</th>
-                    <th className="border px-3 py-2 text-left">Ticket</th>
-                    <th className="border px-3 py-2 text-left">Notes</th>
+                    <th className="border px-3 py-2">Alert Name</th>
+                    <th className="border px-3 py-2">Details</th>
+                    <th className="border px-3 py-2">Trigger Time</th>
+                    <th className="border px-3 py-2">Ticket</th>
+                    <th className="border px-3 py-2">Notes</th>
                     <th className="border px-3 py-2 text-center">Action</th>
                   </tr>
                 </thead>
@@ -218,35 +208,35 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                       </td>
                       <td className="border px-3 py-2">
                         <input
-                          className="w-full border border-gray-300 rounded px-2 py-1"
+                          className="w-full border rounded px-2 py-1"
                           value={alert.name}
                           onChange={(e) => handleAlertChange(index, "name", e.target.value)}
                         />
                       </td>
                       <td className="border px-3 py-2">
                         <input
-                          className="w-full border border-gray-300 rounded px-2 py-1"
+                          className="w-full border rounded px-2 py-1"
                           value={alert.details}
                           onChange={(e) => handleAlertChange(index, "details", e.target.value)}
                         />
                       </td>
                       <td className="border px-3 py-2">
                         <input
-                          className="w-full border border-gray-300 rounded px-2 py-1"
+                          className="w-full border rounded px-2 py-1"
                           value={alert.time}
                           onChange={(e) => handleAlertChange(index, "time", e.target.value)}
                         />
                       </td>
                       <td className="border px-3 py-2">
                         <input
-                          className="w-full border border-gray-300 rounded px-2 py-1"
+                          className="w-full border rounded px-2 py-1"
                           value={alert.ticket}
                           onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
                         />
                       </td>
                       <td className="border px-3 py-2">
                         <input
-                          className="w-full border border-gray-300 rounded px-2 py-1"
+                          className="w-full border rounded px-2 py-1"
                           value={alert.notes}
                           onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
                         />
@@ -259,9 +249,9 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                               e.preventDefault();
                               const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
                               const body = encodeURIComponent(
-                                `Client: ${formData.solarwinds.client || 'Multiple'}\n` +
+                                `Client: ${formData.solarwinds.client || "Multiple"}\n` +
                                 `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-                                `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer || 'Unknown'}\nNotes: ${alert.notes}`
+                                `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer || "Unknown"}\nNotes: ${alert.notes}`
                               );
                               window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
                             }}
