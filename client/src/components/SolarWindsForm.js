@@ -35,25 +35,24 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleChange("date", null, storedDate);
   }
 
-  // Fetch SolarWinds alerts
-  fetch("/api/solarwinds-alerts")
-    .then((res) => res.json())
-    .then((data) => {
-      const formatted = data.map(alert => ({
-        name: alert.AlertName || "",
-        details: alert.TriggeringObject || "",
-        time: alert.TriggeredDateTime || "",
-        ticket: "",
-        notes: "",
-        selected: false
-      }));
-      handleChange("solarwinds", "alerts", formatted);
-    })
-    .catch((err) => {
-      console.error("❌ Failed to load SolarWinds alerts:", err);
-      toast.error("⚠️ Could not load alerts");
-    });
-}, []);
+ // Fetch SolarWinds alerts
+fetch("/api/solarwinds-alerts")
+  .then((res) => res.json())
+  .then((data) => {
+    const formatted = data.map(alert => ({
+      name: alert.AlertName || "",
+      details: alert.TriggeringObject || "",
+      time: alert.TriggeredDateTime || "",
+      ticket: "",
+      notes: "",
+      selected: false
+    }));
+    handleChange("solarwinds", "alerts", formatted);
+  })
+  .catch((err) => {
+    console.error("❌ Failed to load SolarWinds alerts:", err);
+    toast.error("⚠️ Could not load alerts");
+  });
 
 
 
