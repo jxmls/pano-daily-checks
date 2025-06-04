@@ -8,7 +8,6 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   const {
     step,
     formData,
-    setFormData,
     handleChange,
     handleAlertChange,
     addAlertRow,
@@ -21,56 +20,40 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleSubmit
   } = useDailyCheckForm();
 
-  // ✅ Fetch SolarWinds alerts from backend
- useEffect(() => {
-  // Prefill engineer and date from localStorage
-  const storedEngineer = localStorage.getItem("engineerName");
-  const storedDate = localStorage.getItem("checkDate");
+  // ✅ Prefill engineer + date and load manual alerts
+  useEffect(() => {
+    const storedEngineer = localStorage.getItem("engineerName");
+    const storedDate = localStorage.getItem("checkDate");
 
-  if (storedEngineer) {
-    handleChange("engineer", null, storedEngineer);
-  }
-
-  if (storedDate) {
-    handleChange("date", null, storedDate);
-  }
-
-useEffect(() => {
-  // Prefill engineer and date from localStorage
-  const storedEngineer = localStorage.getItem("engineerName");
-  const storedDate = localStorage.getItem("checkDate");
-
-  if (storedEngineer) {
-    handleChange("engineer", null, storedEngineer);
-  }
-
-  if (storedDate) {
-    handleChange("date", null, storedDate);
-  }
-
-  // 🔧 Temporarily hardcoded alert data (manual mode)
-  const manualAlerts = [
-    {
-      name: "24x7 Serious Node rebooted",
-      details: "CV1VOLPRT001",
-      time: "2025-06-03 14:19:35",
-      ticket: "",
-      notes: "",
-      selected: false
-    },
-    {
-      name: "Hardware component is in critical state",
-      details: "LSQ - ESX2",
-      time: "2025-06-03 11:39:59",
-      ticket: "",
-      notes: "",
-      selected: false
+    if (storedEngineer) {
+      handleChange("engineer", null, storedEngineer);
     }
-  ];
 
-  handleChange("solarwinds", "alerts", manualAlerts);
-}, []);
+    if (storedDate) {
+      handleChange("date", null, storedDate);
+    }
 
+    const manualAlerts = [
+      {
+        name: "24x7 Serious Node rebooted",
+        details: "CV1VOLPRT001",
+        time: "2025-06-03 14:19:35",
+        ticket: "",
+        notes: "",
+        selected: false
+      },
+      {
+        name: "Hardware component is in critical state",
+        details: "LSQ - ESX2",
+        time: "2025-06-03 11:39:59",
+        ticket: "",
+        notes: "",
+        selected: false
+      }
+    ];
+
+    handleChange("solarwinds", "alerts", manualAlerts);
+  }, []);
 
   const handleFinalSubmit = () => {
     toast(
@@ -138,7 +121,6 @@ useEffect(() => {
               value={formData.engineer || ""}
               readOnly
             />
-
           </div>
 
           <div className="flex gap-4 mt-4">
@@ -231,107 +213,106 @@ useEffect(() => {
           <div>
             <label className="block font-medium mb-2">Alert Information</label>
             <table className="min-w-full border text-sm shadow-sm rounded overflow-hidden">
-  <thead className="bg-gray-100 text-gray-700">
-    <tr>
-      <th className="border px-3 py-2 text-center">
-        <input
-          type="checkbox"
-          checked={selectAll}
-          onChange={toggleSelectAll}
-        />
-      </th>
-      <th className="border px-3 py-2 text-left">Alert Name</th>
-      <th className="border px-3 py-2 text-left">Details</th>
-      <th className="border px-3 py-2 text-left">Trigger Time</th>
-      <th className="border px-3 py-2 text-left">Ticket</th>
-      <th className="border px-3 py-2 text-left">Notes</th>
-      <th className="border px-3 py-2 text-center">Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {formData.solarwinds.alerts.map((alert, index) => (
-      <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-        <td className="border px-3 py-2 text-center">
-          <input
-            type="checkbox"
-            checked={alert.selected || false}
-            onChange={() => toggleRowSelection(index)}
-          />
-        </td>
-        <td className="border px-3 py-2">
-          <input
-            className="w-full border border-gray-300 rounded px-2 py-1"
-            value={alert.name}
-            onChange={(e) => handleAlertChange(index, "name", e.target.value)}
-          />
-        </td>
-        <td className="border px-3 py-2">
-          <input
-            className="w-full border border-gray-300 rounded px-2 py-1"
-            value={alert.details}
-            onChange={(e) => handleAlertChange(index, "details", e.target.value)}
-          />
-        </td>
-        <td className="border px-3 py-2">
-          <input
-            className="w-full border border-gray-300 rounded px-2 py-1"
-            value={alert.time}
-            onChange={(e) => handleAlertChange(index, "time", e.target.value)}
-          />
-        </td>
-        <td className="border px-3 py-2">
-          <input
-            className="w-full border border-gray-300 rounded px-2 py-1"
-            value={alert.ticket}
-            onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
-          />
-        </td>
-        <td className="border px-3 py-2">
-          <input
-            className="w-full border border-gray-300 rounded px-2 py-1"
-            value={alert.notes}
-            onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
-          />
-        </td>
-        <td className="border px-3 py-2 text-center">
-          {alert.selected && (
-            <button
-              className="text-blue-600 hover:underline text-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
-                const body = encodeURIComponent(
-                  `Client: ${formData.solarwinds.client || 'Multiple'}\n` +
-                  `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-                  `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer || 'Unknown'}\nNotes: ${alert.notes}`
-                );
-                window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
-              }}
-            >
-              📧 Create Ticket
-            </button>
-          )}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+              <thead className="bg-gray-100 text-gray-700">
+                <tr>
+                  <th className="border px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="border px-3 py-2 text-left">Alert Name</th>
+                  <th className="border px-3 py-2 text-left">Details</th>
+                  <th className="border px-3 py-2 text-left">Trigger Time</th>
+                  <th className="border px-3 py-2 text-left">Ticket</th>
+                  <th className="border px-3 py-2 text-left">Notes</th>
+                  <th className="border px-3 py-2 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.solarwinds.alerts.map((alert, index) => (
+                  <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                    <td className="border px-3 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={alert.selected || false}
+                        onChange={() => toggleRowSelection(index)}
+                      />
+                    </td>
+                    <td className="border px-3 py-2">
+                      <input
+                        className="w-full border border-gray-300 rounded px-2 py-1"
+                        value={alert.name}
+                        onChange={(e) => handleAlertChange(index, "name", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-3 py-2">
+                      <input
+                        className="w-full border border-gray-300 rounded px-2 py-1"
+                        value={alert.details}
+                        onChange={(e) => handleAlertChange(index, "details", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-3 py-2">
+                      <input
+                        className="w-full border border-gray-300 rounded px-2 py-1"
+                        value={alert.time}
+                        onChange={(e) => handleAlertChange(index, "time", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-3 py-2">
+                      <input
+                        className="w-full border border-gray-300 rounded px-2 py-1"
+                        value={alert.ticket}
+                        onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-3 py-2">
+                      <input
+                        className="w-full border border-gray-300 rounded px-2 py-1"
+                        value={alert.notes}
+                        onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-3 py-2 text-center">
+                      {alert.selected && (
+                        <button
+                          className="text-blue-600 hover:underline text-sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
+                            const body = encodeURIComponent(
+                              `Client: ${formData.solarwinds.client || 'Multiple'}\n` +
+                              `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
+                              `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer || 'Unknown'}\nNotes: ${alert.notes}`
+                            );
+                            window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
+                          }}
+                        >
+                          📧 Create Ticket
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
             <div className="flex gap-4 mt-4">
-  <button
-    onClick={addAlertRow}
-    className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
-  >
-    ➕ Add Row
-  </button>
-  <button
-    onClick={deleteSelectedRows}
-    className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
-  >
-    🗑️ Delete Selected
-  </button>
-</div>
-
+              <button
+                onClick={addAlertRow}
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
+              >
+                ➕ Add Row
+              </button>
+              <button
+                onClick={deleteSelectedRows}
+                className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
+              >
+                🗑️ Delete Selected
+              </button>
+            </div>
           </div>
 
           <div className="mt-6 flex gap-4">
