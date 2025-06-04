@@ -1,14 +1,13 @@
 // Header.js
 import React from "react";
-import { Button } from "@/components/ui/button";
 
 export default function Header() {
   return (
-    <div className="bg-black w-full py-4 px-6 flex items-center justify-between">
+    <div className="bg-black w-full flex items-center justify-between px-6 py-4">
       <img src="/panologo.png" alt="Panoptics logo" className="h-12" />
-      <Button className="bg-white text-black hover:bg-gray-200 text-sm px-4 py-2 rounded">
-        Dashboard
-      </Button>
+      <a href="/" className="text-white text-sm border border-white rounded px-3 py-1 hover:bg-white hover:text-black transition">
+        Home
+      </a>
     </div>
   );
 }
