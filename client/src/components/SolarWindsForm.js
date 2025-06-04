@@ -20,37 +20,23 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleSubmit
   } = useDailyCheckForm();
 
-  // ✅ Prefill engineer + date and load manual alerts
-  useEffect(() => {
-    const storedEngineer = localStorage.getItem("engineerName");
-    const storedDate = localStorage.getItem("checkDate");
+ useEffect(() => {
+  // Prefill engineer and date from localStorage
+  const storedEngineer = localStorage.getItem("engineerName");
+  const storedDate = localStorage.getItem("checkDate");
 
-    if (storedEngineer) {
-      handleChange("engineer", null, storedEngineer);
-    }
+  if (storedEngineer) {
+    handleChange("engineer", null, storedEngineer);
+  }
 
-    if (storedDate) {
-      handleChange("date", null, storedDate);
-    }
+  if (storedDate) {
+    handleChange("date", null, storedDate);
+  }
 
-    const manualAlerts = [
-      {
-        name: "24x7 Serious Node rebooted",
-        details: "CV1VOLPRT001",
-        time: "2025-06-03 14:19:35",
-        ticket: "",
-        notes: "",
-        selected: false
-      },
-      {
-        name: "Hardware component is in critical state",
-        details: "LSQ - ESX2",
-        time: "2025-06-03 11:39:59",
-        ticket: "",
-        notes: "",
-        selected: false
-      }
-    ];
+  // Initialize with an empty alert array (user-driven input)
+  handleChange("solarwinds", "alerts", []);
+}, []);
+
 
     handleChange("solarwinds", "alerts", manualAlerts);
   }, []);
