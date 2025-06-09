@@ -205,11 +205,16 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                         onClick={(e) => {
                           e.preventDefault();
                           const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
-                          const body = encodeURIComponent(
-                            `Client: ${formData.solarwinds.client || "Multiple"}\n` +
-                            `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-                            `Trigger Time: ${alert.time}\nAssign to: ${formData.engineer || "Unknown"}\nNotes: ${alert.notes}`
-                          );
+                          const engineerName = typeof formData.engineer === "string"
+  ? formData.engineer
+  : (formData.engineer?.name || "Unknown");
+
+const body = encodeURIComponent(
+  `Client: ${formData.solarwinds.client || "Multiple"}\n` +
+  `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
+  `Trigger Time: ${alert.time}\nAssign to: ${engineerName}\nNotes: ${alert.notes}`
+);
+
                           window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
                         }}
                       >
