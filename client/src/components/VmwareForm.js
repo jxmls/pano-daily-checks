@@ -34,16 +34,8 @@ export default function VSANForm({ onBackToDashboard }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 relative">
-      <button
-        onClick={onBackToDashboard}
-        className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded"
-      >
-        Home
-      </button>
-      <div className="flex justify-center mb-4">
-        <img src="/panologo.png" alt="Panoptics logo" className="h-20" />
-      </div>
+    <div className="min-h-screen bg-white text-black">
+    
       <h1 className="text-3xl font-bold mb-4 text-center">VMware vSAN Checks</h1>
 
       {step === 1 && (

@@ -1,26 +1,31 @@
+// components/LoginScreen.js
+
 import React, { useState } from "react";
 
-export default function SplashScreen({ onLogin }) {
+export default function LoginScreen({ onLogin }) {
   const [engineer, setEngineer] = useState("");
   const [date, setDate] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = () => {
-    if (password === "HotFix991!") {
-      // ✅ Save engineer name to localStorage
-      localStorage.setItem("engineerName", engineer);
-      localStorage.setItem("checkDate", date);
-      
-      onLogin(engineer, date);
-    } else {
-      setError("Incorrect password. Please try again.");
+    if (!engineer || !date) {
+      setError("Please select both engineer and date.");
+      return;
     }
+
+    if (password !== "HotFix991!") {
+      setError("Incorrect password. Please try again.");
+      return;
+    }
+
+    localStorage.setItem("engineerName", engineer);
+    localStorage.setItem("checkDate", date);
+    onLogin(engineer, date);
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 px-4">
-      <img src="/panologo.png" alt="Panoptics Logo" className="h-24 mb-6" />
       <h1 className="text-3xl font-bold mb-6 text-center">
         Panoptics Infrastructure Checks
       </h1>
@@ -57,7 +62,6 @@ export default function SplashScreen({ onLogin }) {
             className="w-full border rounded px-3 py-2"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
           />
         </div>
 

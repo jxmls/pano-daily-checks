@@ -1,28 +1,23 @@
 import { useState } from "react";
 
 export default function useDailyCheckForm() {
-  const [step, setStep] = useState(1);
-  const [selectAll, setSelectAll] = useState(false);
-
   const [formData, setFormData] = useState({
-    date: "",
     engineer: "",
+    date: "",
     solarwinds: {
       servicesRunning: "",
       client: "",
       alertType: "",
-      alerts: []
+      alerts: [],
     },
-    vsan: {
-      client: "",
-      alert: "",
-      alerts: []
-    }
   });
 
+  const [selectAll, setSelectAll] = useState(false);
+
+  // Update a top-level or nested field in formData
   const handleChange = (section, field, value) => {
-    if (field === null) {
-      setFormData((prev) => ({ ...prev, [section]: value }));
+    if (!section) {
+      setFormData((prev) => ({ ...prev, [field]: value }));
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -34,111 +29,96 @@ export default function useDailyCheckForm() {
     }
   };
 
+  // Update a specific field in a specific alert row
   const handleAlertChange = (index, field, value) => {
-    const targetSection = formData.solarwinds.alerts.length > 0 ? "solarwinds" : "vsan";
-    const alerts = formData[targetSection].alerts || [];
-    const newAlerts = [...alerts];
-    newAlerts[index][field] = value;
+    setFormData((prev) => {
+      const updatedAlerts = [...prev.solarwinds.alerts];
+      updatedAlerts[index] = { ...updatedAlerts[index], [field]: value };
+      return {
+        ...prev,
+        solarwinds: {
+          ...prev.solarwinds,
+          alerts: updatedAlerts,
+        },
+      };
+    });
+  };
+
+  // Add a new empty alert row
+  const addAlertRow = () => {
     setFormData((prev) => ({
       ...prev,
-      [targetSection]: {
-        ...prev[targetSection],
-        alerts: newAlerts,
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: [...prev.solarwinds.alerts, {
+          name: "",
+          details: "",
+          time: "",
+          ticket: "",
+          notes: "",
+          selected: false,
+        }],
       },
     }));
   };
 
-  const addAlertRow = () => {
-    const targetSection = step === 2 ? "solarwinds" : "vsan";
-    const newAlert = targetSection === "solarwinds" ? {
-      name: "",
-      details: "",
-      time: "",
-      ticket: "",
-      notes: "",
-      selected: false
-    } : {
-      host: "",
-      type: "",
-      details: "",
-      selected: false
-    };
-    setFormData((prev) => ({
-      ...prev,
-      [targetSection]: {
-        ...prev[targetSection],
-        alerts: [...(prev[targetSection].alerts || []), newAlert]
-      }
-    }));
-  };
-
+  // Toggle row selection by index
   const toggleRowSelection = (index) => {
-    const targetSection = step === 2 ? "solarwinds" : "vsan";
-    const alerts = formData[targetSection].alerts || [];
-    const newAlerts = [...alerts];
-    newAlerts[index].selected = !newAlerts[index].selected;
-    setFormData((prev) => ({
-      ...prev,
-      [targetSection]: {
-        ...prev[targetSection],
-        alerts: newAlerts
-      }
-    }));
+    setFormData((prev) => {
+      const updatedAlerts = [...prev.solarwinds.alerts];
+      updatedAlerts[index].selected = !updatedAlerts[index].selected;
+      return {
+        ...prev,
+        solarwinds: {
+          ...prev.solarwinds,
+          alerts: updatedAlerts,
+        },
+      };
+    });
   };
 
-  const toggleSelectAll = () => {
-    const targetSection = step === 2 ? "solarwinds" : "vsan";
-    const newSelectAll = !selectAll;
-    const newAlerts = (formData[targetSection].alerts || []).map((alert) => ({
-      ...alert,
-      selected: newSelectAll
-    }));
-    setSelectAll(newSelectAll);
-    setFormData((prev) => ({
-      ...prev,
-      [targetSection]: {
-        ...prev[targetSection],
-        alerts: newAlerts
-      }
-    }));
-  };
-
+  // Delete all selected alert rows
   const deleteSelectedRows = () => {
-    const targetSection = step === 2 ? "solarwinds" : "vsan";
-    const filteredAlerts = (formData[targetSection].alerts || []).filter(
-      (alert) => !alert.selected
-    );
     setFormData((prev) => ({
       ...prev,
-      [targetSection]: {
-        ...prev[targetSection],
-        alerts: filteredAlerts
-      }
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: prev.solarwinds.alerts.filter((alert) => !alert.selected),
+      },
     }));
     setSelectAll(false);
   };
 
-  const next = () => setStep((prev) => prev + 1);
-  const prev = () => setStep((prev) => prev - 1);
+  // Toggle select all
+  const toggleSelectAll = () => {
+    setSelectAll((prev) => !prev);
+    setFormData((prev) => ({
+      ...prev,
+      solarwinds: {
+        ...prev.solarwinds,
+        alerts: prev.solarwinds.alerts.map((alert) => ({
+          ...alert,
+          selected: !selectAll,
+        })),
+      },
+    }));
+  };
 
+  // Submit handler (could be replaced with API call or local save)
   const handleSubmit = () => {
-    console.log("📤 Submitting form data:", formData);
-    // Replace with actual API call
+    console.log("Submitted form data:", formData);
+    // For now we just log the data; in future you might send to API or store in DB
   };
 
   return {
-    step,
     formData,
-    setFormData,
     handleChange,
     handleAlertChange,
     addAlertRow,
     toggleRowSelection,
-    toggleSelectAll,
     deleteSelectedRows,
-    next,
-    prev,
+    toggleSelectAll,
+    selectAll,
     handleSubmit,
-    selectAll
   };
 }

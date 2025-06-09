@@ -1,10 +1,12 @@
+// App.js
 import React, { useState } from "react";
-import LoginScreen from './components/LoginScreen';
+import LoginScreen from "./components/LoginScreen";
 import Dashboard from "./components/Dashboard";
-import SolarWindsForm from './components/SolarWindsForm';
-import VmwareForm from './components/VmwareForm';
+import SolarWindsForm from "./components/SolarWindsForm";
+import VmwareForm from "./components/VmwareForm";
+import Header from "./components/Header";
 
-function App() {
+export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [screen, setScreen] = useState("splash");
   const [userData, setUserData] = useState({});
@@ -16,52 +18,42 @@ function App() {
   };
 
   const handleSelectModule = (module) => {
-    if (module === "solarwinds") {
-      setScreen("solarwinds");
-    } else if (module === "vsan") {
-      setScreen("vsan"); // ✅ this was missing
-    }
-    // Add more module routes as needed
+    setScreen(module);
   };
 
-  if (!authenticated) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
-
-  if (screen === "dashboard") {
-    return (
-      <Dashboard
-        onSelectModule={handleSelectModule}
+  return (
+    <div className="min-h-screen bg-white text-black">
+      <Header
+        showHome={authenticated && screen !== "dashboard"}
+        showSignOut={authenticated && screen === "dashboard"}
+        onBackToDashboard={() => setScreen("dashboard")}
         onSignOut={() => {
           setAuthenticated(false);
           setUserData({});
           setScreen("splash");
         }}
-      />
-    );
-  }
-
-  if (screen === "solarwinds") {
-    return (
-      <SolarWindsForm
         engineer={userData.engineer}
-        date={userData.date}
-        onBackToDashboard={() => setScreen("dashboard")}
       />
-    );
-  }
 
-  if (screen === "vsan") {
-    return (
-      <VmwareForm
-        engineer={userData.engineer}
-        date={userData.date}
-        onBackToDashboard={() => setScreen("dashboard")}
-      />
-    );
-  }
-
-  return null;
+      <div className="max-w-6xl mx-auto p-4">
+        {!authenticated ? (
+          <LoginScreen onLogin={handleLogin} />
+        ) : screen === "dashboard" ? (
+          <Dashboard onSelectModule={handleSelectModule} />
+        ) : screen === "solarwinds" ? (
+          <SolarWindsForm
+            engineer={userData.engineer}
+            date={userData.date}
+            onBackToDashboard={() => setScreen("dashboard")}
+          />
+        ) : screen === "vsan" ? (
+          <VmwareForm
+            engineer={userData.engineer}
+            date={userData.date}
+            onBackToDashboard={() => setScreen("dashboard")}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
 }
-
-export default App;
