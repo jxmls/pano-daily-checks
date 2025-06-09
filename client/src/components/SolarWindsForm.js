@@ -20,24 +20,20 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   console.log("🚨 formData in SolarWindsForm:", formData);
 
   useEffect(() => {
-    handleChange("engineer", null, localStorage.getItem("engineerName") || "");
-    handleChange("date", null, localStorage.getItem("checkDate") || "");
+  const storedEngineer = localStorage.getItem("engineerName") || "";
+  const storedDate = localStorage.getItem("checkDate") || "";
 
-    if (
-      formData?.solarwinds?.alerts &&
-      formData.solarwinds.alerts.length === 0
-    ) {
-      addAlertRow();
-    }
-  }, []);
+  handleChange(null, "engineer", storedEngineer);
+  handleChange(null, "date", storedDate);
 
-  if (!formData?.solarwinds) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-black">
-        <p>⏳ Loading SolarWinds form...</p>
-      </div>
-    );
+  if (
+    formData?.solarwinds?.alerts &&
+    formData.solarwinds.alerts.length === 0
+  ) {
+    addAlertRow();
   }
+}, []);
+
 
   const handleFinalSubmit = () => {
     toast((t) => (
