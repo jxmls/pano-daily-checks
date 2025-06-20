@@ -1,35 +1,46 @@
+// useSolarWindsForm.js
 import { useState } from "react";
 
-export default function useDailyCheckForm() {
+const defaultRowTemplate = {
+  alertType: "",
+  name: "",
+  details: "",
+  time: "",
+  ticket: "",
+  notes: "",
+  selected: false,
+};
+
+export default function useSolarWindsForm() {
   const [formData, setFormData] = useState({
     engineer: "",
     date: "",
     solarwinds: {
       servicesRunning: "",
       client: "",
-      alertType: "",
+      serviceDownTicket: "",
       alerts: [],
+      alertsGenerated: "",
     },
   });
 
   const [selectAll, setSelectAll] = useState(false);
 
-  // Update a top-level or nested field in formData
-  const handleChange = (section, field, value) => {
-    if (!section) {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value,
-        },
-      }));
-    }
+  const handleChange = (section, path, value) => {
+    setFormData((prevData) => {
+      const updated = { ...prevData };
+      if (!updated[section]) updated[section] = {};
+      const keys = path.split(".");
+      let temp = updated[section];
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!temp[keys[i]]) temp[keys[i]] = {};
+        temp = temp[keys[i]];
+      }
+      temp[keys[keys.length - 1]] = value;
+      return updated;
+    });
   };
 
-  // Update a specific field in a specific alert row
   const handleAlertChange = (index, field, value) => {
     setFormData((prev) => {
       const updatedAlerts = [...prev.solarwinds.alerts];
@@ -44,29 +55,21 @@ export default function useDailyCheckForm() {
     });
   };
 
-  // Add a new empty alert row
   const addAlertRow = () => {
     setFormData((prev) => ({
       ...prev,
       solarwinds: {
         ...prev.solarwinds,
-        alerts: [...prev.solarwinds.alerts, {
-          name: "",
-          details: "",
-          time: "",
-          ticket: "",
-          notes: "",
-          selected: false,
-        }],
+        alerts: [...prev.solarwinds.alerts, { ...defaultRowTemplate }],
       },
     }));
   };
 
-  // Toggle row selection by index
   const toggleRowSelection = (index) => {
     setFormData((prev) => {
-      const updatedAlerts = [...prev.solarwinds.alerts];
-      updatedAlerts[index].selected = !updatedAlerts[index].selected;
+      const updatedAlerts = prev.solarwinds.alerts.map((alert, i) =>
+        i === index ? { ...alert, selected: !alert.selected } : alert
+      );
       return {
         ...prev,
         solarwinds: {
@@ -77,7 +80,6 @@ export default function useDailyCheckForm() {
     });
   };
 
-  // Delete all selected alert rows
   const deleteSelectedRows = () => {
     setFormData((prev) => ({
       ...prev,
@@ -89,7 +91,6 @@ export default function useDailyCheckForm() {
     setSelectAll(false);
   };
 
-  // Toggle select all
   const toggleSelectAll = () => {
     setSelectAll((prev) => !prev);
     setFormData((prev) => ({
@@ -104,11 +105,25 @@ export default function useDailyCheckForm() {
     }));
   };
 
-  // Submit handler (could be replaced with API call or local save)
   const handleSubmit = () => {
     console.log("Submitted form data:", formData);
-    // For now we just log the data; in future you might send to API or store in DB
   };
+
+  const generateTicketBody = (alert) => {
+    const engineer = typeof formData.engineer === "string"
+      ? formData.engineer
+      : formData.engineer?.name || "Unknown";
+
+    return encodeURIComponent(
+      `Client: ${formData.solarwinds.client || "Multiple"}\n` +
+      `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
+      `Alert Type: ${alert.alertType || "N/A"}\n` +
+      `Trigger Time: ${alert.time}\nAssign to: ${engineer}\nNotes: ${alert.notes}`
+    );
+  };
+
+  const generateTicketSubject = (alert) =>
+    encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
 
   return {
     formData,
@@ -120,5 +135,7 @@ export default function useDailyCheckForm() {
     toggleSelectAll,
     selectAll,
     handleSubmit,
+    generateTicketBody,
+    generateTicketSubject,
   };
 }

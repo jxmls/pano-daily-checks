@@ -1,4 +1,3 @@
-// App.js
 import React, { useState } from "react";
 import LoginScreen from "./components/LoginScreen";
 import Dashboard from "./components/Dashboard";
@@ -23,6 +22,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black">
+
       <Header
         showHome={authenticated && screen !== "dashboard"}
         showSignOut={authenticated && screen === "dashboard"}

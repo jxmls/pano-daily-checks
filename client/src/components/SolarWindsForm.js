@@ -1,6 +1,8 @@
+//SolarWindsForm.js
 import React, { useEffect, useState } from "react";
 import { toast, Toaster } from "react-hot-toast";
-import useDailyCheckForm from "./useDailyCheckForm";
+import useSolarWindsForm from "./useSolarWindsForm";
+
 
 export default function SolarWindsForm({ onBackToDashboard }) {
   const [submitted, setSubmitted] = useState(false);
@@ -15,25 +17,17 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     toggleSelectAll,
     selectAll,
     handleSubmit
-  } = useDailyCheckForm();
-
-  console.log("🚨 formData in SolarWindsForm:", formData);
+  } = useSolarWindsForm();
 
   useEffect(() => {
-  const storedEngineer = localStorage.getItem("engineerName") || "";
-  const storedDate = localStorage.getItem("checkDate") || "";
+    const storedEngineer = localStorage.getItem("engineerName") || "";
+    const storedDate = localStorage.getItem("checkDate") || "";
 
-  handleChange(null, "engineer", storedEngineer);
-  handleChange(null, "date", storedDate);
+    handleChange(null, "engineer", storedEngineer);
+    handleChange(null, "date", storedDate);
 
-  if (
-    formData?.solarwinds?.alerts &&
-    formData.solarwinds.alerts.length === 0
-  ) {
-    addAlertRow();
-  }
-}, []);
-
+    
+  }, [handleChange, addAlertRow, formData.solarwinds.alertsGenerated]);
 
   const handleFinalSubmit = () => {
     toast((t) => (
@@ -73,11 +67,8 @@ export default function SolarWindsForm({ onBackToDashboard }) {
           This is a daily checklist to check and address any alerts flagged in:
           <ul className="list-disc list-inside mt-2">
             <li>SolarWinds</li>
-            <li>VMware vSAN</li>
           </ul>
         </p>
-
-        <h2 className="text-2xl font-semibold mt-8 mb-2">SolarWinds</h2>
         <p className="text-gray-600 mb-2">
           Access via VPN or RDS:
           <a
@@ -105,9 +96,8 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 type="radio"
                 name="servicesRunning"
                 value="yes"
-                onChange={() =>
-                  handleChange("solarwinds", "servicesRunning", "yes")
-                }
+                checked={formData.solarwinds.servicesRunning === "yes"}
+                onChange={() => handleChange("solarwinds", "servicesRunning", "yes")}
               />
               Yes
             </label>
@@ -116,14 +106,27 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 type="radio"
                 name="servicesRunning"
                 value="no"
-                onChange={() =>
-                  handleChange("solarwinds", "servicesRunning", "no")
-                }
+                checked={formData.solarwinds.servicesRunning === "no"}
+                onChange={() => handleChange("solarwinds", "servicesRunning", "no")}
               />
               No
             </label>
           </div>
         </div>
+
+        {formData.solarwinds.servicesRunning === "no" && (
+          <div className="mt-2">
+            <label className="block text-sm font-medium mb-1">Ticket Reference</label>
+            <input
+              type="text"
+              className="w-full border rounded px-3 py-2"
+              value={formData.solarwinds.serviceDownTicket || ""}
+              onChange={(e) =>
+                handleChange("solarwinds", "serviceDownTicket", e.target.value)
+              }
+            />
+          </div>
+        )}
 
         <div className="mb-4">
           <label className="block font-medium mb-1">Clients</label>
@@ -137,111 +140,197 @@ export default function SolarWindsForm({ onBackToDashboard }) {
           />
         </div>
 
+        {/* New Alert Generated section */}
         <div className="mb-4">
-          <label className="block font-medium mb-1">Alert Type</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={formData.solarwinds.alertType || ""}
-            onChange={(e) =>
-              handleChange("solarwinds", "alertType", e.target.value)
-            }
-          >
-            <option value="">Select type</option>
-            <option value="Warning">Warning</option>
-            <option value="Serious">Serious</option>
-            <option value="Critical">Critical</option>
-            <option value="Warning & Serious">Warning & Serious</option>
-            <option value="Warning and Critical">Warning and Critical</option>
-            <option value="Serious and Critical">Serious and Critical</option>
-            <option value="Warning Serious & Critical">
-              Warning Serious & Critical
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block font-medium mb-2">Alert Information</label>
-          <table className="min-w-full border text-sm shadow-sm rounded overflow-hidden">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="border px-3 py-2 text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={toggleSelectAll}
-                  />
-                </th>
-                <th className="border px-3 py-2">Alert Name</th>
-                <th className="border px-3 py-2">Details</th>
-                <th className="border px-3 py-2">Trigger Time</th>
-                <th className="border px-3 py-2">Ticket</th>
-                <th className="border px-3 py-2">Notes</th>
-                <th className="border px-3 py-2 text-center">🎫</th>
-              </tr>
-            </thead>
-            <tbody>
-              {formData.solarwinds.alerts.map((alert, index) => (
-                <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="border px-3 py-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={!!alert.selected}
-                      onChange={() => toggleRowSelection(index)}
-                    />
-                  </td>
-                  {["name", "details", "time", "ticket", "notes"].map((field) => (
-                    <td key={field} className="border px-3 py-2">
-                      <input
-                        className="w-full border rounded px-2 py-1"
-                        value={alert[field] || ""}
-                        onChange={(e) => handleAlertChange(index, field, e.target.value)}
-                      />
-                    </td>
-                  ))}
-                  <td className="border px-3 py-2 text-center">
-                    {alert.selected && alert.name && alert.details && (
-                      <button
-                        className="text-blue-600 hover:underline text-sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
-                          const engineerName = typeof formData.engineer === "string"
-  ? formData.engineer
-  : (formData.engineer?.name || "Unknown");
-
-const body = encodeURIComponent(
-  `Client: ${formData.solarwinds.client || "Multiple"}\n` +
-  `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-  `Trigger Time: ${alert.time}\nAssign to: ${engineerName}\nNotes: ${alert.notes}`
-);
-
-                          window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
-                        }}
-                      >
-                        🎫
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex gap-4 mt-4">
-            <button
-              onClick={addAlertRow}
-              className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
-            >
-              ➕ Add Row
-            </button>
-            <button
-              onClick={deleteSelectedRows}
-              className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
-            >
-              🗑️ Delete Selected
-            </button>
+          <label className="block font-medium mb-1">Alert generated?</label>
+          <div className="flex gap-4">
+            <label>
+              <input
+                type="radio"
+                name="alertsGenerated"
+                value="yes"
+                checked={formData.solarwinds.alertsGenerated === "yes"}
+                onChange={() => {
+                  handleChange("solarwinds", "alertsGenerated", "yes");
+                  if (!formData.solarwinds.alerts.length) {
+                    addAlertRow("solarwinds", "alerts");
+                  }
+                }}
+              />
+              Yes
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="alertsGenerated"
+                value="no"
+                checked={formData.solarwinds.alertsGenerated === "no"}
+                onChange={() => {
+                  handleChange("solarwinds", "alertsGenerated", "no");
+                  handleChange("solarwinds", "alerts", []); // Optional: clear alerts
+                }}
+              />
+              No
+            </label>
           </div>
         </div>
+
+        {/* Conditional Alert Table */}
+        {formData.solarwinds.alertsGenerated === "yes" && (
+          <div>
+            <label className="block font-medium mb-2">Alert Information</label>
+            <table className="min-w-full border text-sm shadow-sm rounded overflow-hidden">
+              <thead className="bg-gray-100 text-gray-700">
+                <tr>
+                  <th className="border px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="border px-3 py-2">Type</th>
+                  <th className="border px-3 py-2">Alert Name</th>
+                  <th className="border px-3 py-2">Details</th>
+                  <th className="border px-3 py-2">Trigger Time</th>
+                  <th className="border px-3 py-2">Ticket</th>
+                  <th className="border px-3 py-2">Notes</th>
+                </tr>
+              </thead>
+              {/* Updated <tbody> row for clickable row + ✅/☐ selection in SolarWindsForm.js */}
+<tbody>
+
+  {formData.solarwinds.alerts.map((alert, index) => (
+    <tr
+      key={index}
+      onClick={() => toggleRowSelection(index)}
+      className={`cursor-pointer ${alert.selected ? "bg-blue-100" : index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+    >
+      <td className="border px-3 py-2 text-center">
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleRowSelection(index);
+          }}
+          className="inline-block cursor-pointer select-none"
+        >
+          {alert.selected ? (
+            <span className="text-green-600 text-lg">✅</span>
+          ) : (
+            <span className="text-gray-400 text-lg">☐</span>
+          )}
+        </div>
+      </td>
+
+      <td className="border px-3 py-2">
+        <select
+          className="w-full border rounded px-2 py-1"
+          value={alert.alertType || ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleAlertChange(index, "alertType", e.target.value)}
+        >
+          <option value="">Select</option>
+          <option value="Warning">Warning</option>
+          <option value="Serious">Serious</option>
+          <option value="Critical">Critical</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+      </td>
+
+      <td className="border px-3 py-2">
+        <input
+          className="w-full border rounded px-2 py-1"
+          value={alert.name || ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleAlertChange(index, "name", e.target.value)}
+        />
+      </td>
+
+      <td className="border px-3 py-2">
+        <input
+          className="w-full border rounded px-2 py-1"
+          value={alert.details || ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleAlertChange(index, "details", e.target.value)}
+        />
+      </td>
+
+      <td className="border px-3 py-2">
+        <input
+          className="w-full border rounded px-2 py-1"
+          value={alert.time || ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleAlertChange(index, "time", e.target.value)}
+        />
+      </td>
+
+      <td className="border px-3 py-2">
+        <input
+          className="w-full border rounded px-2 py-1"
+          value={alert.ticket || ""}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
+        />
+      </td>
+
+      <td className="border px-3 py-2">
+        <div onClick={(e) => e.stopPropagation()}>
+          <input
+            className="w-full border rounded px-2 py-1"
+            value={alert.notes || ""}
+            onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
+          />
+        </div>
+      </td>
+
+      <td className="border px-3 py-2 text-center">
+        {alert.selected && alert.name && alert.details && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <button
+              className="text-blue-600 hover:underline text-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                const subject = encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
+                const engineerName = typeof formData.engineer === "string"
+                  ? formData.engineer
+                  : (formData.engineer?.name || "Unknown");
+                const body = encodeURIComponent(
+                  `Client: ${formData.solarwinds.client || "Multiple"}\n` +
+                  `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
+                  `Alert Type: ${alert.alertType || "N/A"}\n` +
+                  `Trigger Time: ${alert.time || "N/A"}\n` +
+                  `Assign to: ${engineerName}\nNotes: ${alert.notes || ""}`
+                );
+                window.location.href = `mailto:yourticketing@email.com?subject=${subject}&body=${body}`;
+              }}
+            >
+              🎫
+            </button>
+          </div>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+
+            </table>
+
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={() => addAlertRow("solarwinds", "alerts")}
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
+              >
+                ➕ Add Row
+              </button>
+              <button
+                onClick={deleteSelectedRows}
+                className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
+              >
+                🗑️ Delete Selected
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex gap-4">
           <button
