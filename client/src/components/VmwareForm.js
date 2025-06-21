@@ -1,3 +1,4 @@
+//VmwareForm.js
 import React, { useEffect } from "react";
 import useVmwareForm from "./useVmwareForm";
 
@@ -10,7 +11,9 @@ export default function VmwareForm({ onBackToDashboard }) {
     toggleRowSelection,
     deleteSelectedRows,
     toggleSelectAll,
-    handleSubmit
+    handleSubmit,
+    generateTicketBody,
+    generateTicketSubject
   } = useVmwareForm();
 
   useEffect(() => {
@@ -19,6 +22,12 @@ export default function VmwareForm({ onBackToDashboard }) {
     handleChange(null, "engineer", storedEngineer);
     handleChange(null, "date", storedDate);
   }, []);
+
+  const openEmailClient = (row, key) => {
+    const subject = decodeURIComponent(generateTicketSubject(row));
+    const body = decodeURIComponent(generateTicketBody(row, key));
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
 
   const renderTable = (key) => {
     const rows = formData.vsan?.alerts?.[key]?.rows || [];
@@ -48,22 +57,21 @@ export default function VmwareForm({ onBackToDashboard }) {
                 onClick={() => toggleRowSelection("vsan", key, index)}
                 className={`cursor-pointer ${alert.selected ? "bg-blue-100" : index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
               >
-              <td className="border px-3 py-2 text-center">
-  <div
-    onClick={(e) => {
-      e.stopPropagation();
-      toggleRowSelection("vsan", key, index);
-    }}
-    className="inline-block cursor-pointer select-none"
-  >
-    {alert.selected ? (
-      <span className="text-green-600 text-lg">✅</span>
-    ) : (
-      <span className="text-gray-400 text-lg">☐</span>
-    )}
-  </div>
-</td>
-
+                <td className="border px-3 py-2 text-center">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleRowSelection("vsan", key, index);
+                    }}
+                    className="inline-block cursor-pointer select-none"
+                  >
+                    {alert.selected ? (
+                      <span className="text-green-600 text-lg">✅</span>
+                    ) : (
+                      <span className="text-gray-400 text-lg">☐</span>
+                    )}
+                  </div>
+                </td>
                 <td className="border px-3 py-2">
                   <div onClick={(e) => e.stopPropagation()}>
                     <select
@@ -135,6 +143,19 @@ export default function VmwareForm({ onBackToDashboard }) {
           >
             🗑️ Delete Selected
           </button>
+
+          {rows
+            .filter((r) => r.selected && r.alertType && r.host && r.details)
+            .map((row, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => openEmailClient(row, key)}
+                className="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-3 py-1 rounded"
+              >
+                📧 Create Email ({row.host})
+              </button>
+            ))}
         </div>
       </div>
     );
@@ -181,41 +202,24 @@ export default function VmwareForm({ onBackToDashboard }) {
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">VMware vSAN Checks</h1>
-
-      {renderSection(
-        "Clarion Events Ltd.",
-        "For accessing the following VMware vSAN environments, please use Clarion RDS farm or UK1-PAN01 and then use Google Chrome to browse.",
-        [
-          { label: "CT", href: "https://us2-vcsa01.clarionevents.local/" },
-          { label: "RP", href: "https://10.75.4.201" },
-          { label: "RP", href: "https://10.75.4.202" },
-          { label: "TUL", href: "https://us1-vcsa01.clarionevents.local/" },
-          { label: "TUL", href: "https://us3-vcsa01.clarionevents.local/" },
-          { label: "SG", href: "https://sg-vc-02.clarionevents.local/" },
-          { label: "UK", href: "https://clr-vcs01.clarionevents.local/" },
-        ],
-        "clarion"
-      )}
-
-      {renderSection(
-        "Panoptics Global Ltd.",
-        "Following VMware vSAN environments can be accessed from your laptop itself if connected to Always On VPN, alternatively connect to Panoptics RDS then open Google Chrome or your preferred browser and navigate to the following:",
-        [
-          { label: "Panoptics Global Ltd. - Production", href: "https://uk-pan-vcs01.panoptics.local/ui/" },
-          { label: "Panoptics Global Ltd. - Production", href: "https://172.16.17.200/" },
-          { label: "Panoptics Global Ltd. - Production", href: "https://172.16.17.88/ui/" },
-          { label: "Panoptics Global Ltd. - Backup Infrastructure", href: "https://backup-vsan-vcsa01.panoptics.local/" },
-        ],
-        "panoptics"
-      )}
-
-      {renderSection(
-        "Volac International",
-        "To access Volac International VMware vSAN environment, you will need to first connect to Volac VPN using Cisco AnyConnect VPN client on your laptop. Once connected, open Google Chrome or your preferred browser and navigate to:",
-        [{ label: "", href: "https://10.22.1.200/" }],
-        "volac"
-      )}
-
+      {renderSection("Clarion Events Ltd.", "For accessing the following VMware vSAN environments, please use Clarion RDS farm or UK1-PAN01 and then use Google Chrome to browse.", [
+        { label: "CT", href: "https://us2-vcsa01.clarionevents.local/" },
+        { label: "RP", href: "https://10.75.4.201" },
+        { label: "RP", href: "https://10.75.4.202" },
+        { label: "TUL", href: "https://us1-vcsa01.clarionevents.local/" },
+        { label: "TUL", href: "https://us3-vcsa01.clarionevents.local/" },
+        { label: "SG", href: "https://sg-vc-02.clarionevents.local/" },
+        { label: "UK", href: "https://clr-vcs01.clarionevents.local/" }
+      ], "clarion")}
+      {renderSection("Panoptics Global Ltd.", "Following VMware vSAN environments can be accessed from your laptop itself if connected to Always On VPN, alternatively connect to Panoptics RDS then open Google Chrome or your preferred browser and navigate to the following:", [
+        { label: "Panoptics Global Ltd. - Production", href: "https://uk-pan-vcs01.panoptics.local/ui/" },
+        { label: "Panoptics Global Ltd. - Production", href: "https://172.16.17.200/" },
+        { label: "Panoptics Global Ltd. - Production", href: "https://172.16.17.88/ui/" },
+        { label: "Panoptics Global Ltd. - Backup Infrastructure", href: "https://backup-vsan-vcsa01.panoptics.local/" }
+      ], "panoptics")}
+      {renderSection("Volac International", "To access Volac International VMware vSAN environment, you will need to first connect to Volac VPN using Cisco AnyConnect VPN client on your laptop. Once connected, open Google Chrome or your preferred browser and navigate to:", [
+        { label: "", href: "https://10.22.1.200/" }
+      ], "volac")}
       <div className="mt-10">
         <button
           onClick={onBackToDashboard}

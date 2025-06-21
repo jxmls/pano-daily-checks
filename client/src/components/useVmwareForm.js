@@ -149,21 +149,23 @@ export default function useVmwareForm() {
   };
 
   const generateTicketBody = (alert, key) => {
-    const engineer = typeof formData.engineer === "string"
-      ? formData.engineer
-      : formData.engineer?.name || "Unknown";
+  const engineer = typeof formData.engineer === "string"
+    ? formData.engineer
+    : formData.engineer?.name || "Unknown";
 
-    return encodeURIComponent(
-      `Environment: ${key}\n` +
-      `Alert Type: ${alert.alertType}\n` +
-      `Host: ${alert.host}\nDetails: ${alert.details}\n` +
-      `Ticket: ${alert.ticket}\nNotes: ${alert.notes}\n` +
-      `Engineer: ${engineer}`
-    );
-  };
+  return encodeURIComponent(
+    `Environment: ${key}\n` +
+    `Alert Type: ${alert.alertType}\n` +
+    `Host: ${alert.host}\n` +
+    `Details: ${alert.details}\n` +
+    `Ticket: ${alert.ticket || "-"}\n` +
+    `Notes: ${alert.notes || "-"}\n` +
+    `Engineer: ${engineer}`
+  );
+};
 
-  const generateTicketSubject = (alert) =>
-    encodeURIComponent(`vSAN Alert - ${alert.host || "Unknown Host"}`);
+const generateTicketSubject = (alert) =>
+  encodeURIComponent(`vSAN Alert - ${alert.host || "Unknown Host"}`);
 
   return {
     formData,
