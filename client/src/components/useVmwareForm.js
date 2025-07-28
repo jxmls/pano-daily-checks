@@ -1,5 +1,6 @@
 // useVmwareForm.js
 import { useState } from "react";
+import jsPDF from "jspdf";
 
 const defaultVmwareRow = {
   alertType: "",
@@ -19,20 +20,30 @@ export default function useVmwareForm() {
     },
   });
 
-  const handleChange = (section, path, value) => {
-    setFormData((prevData) => {
-      const updated = { ...prevData };
-      if (!updated[section]) updated[section] = {};
-      const keys = path.split(".");
-      let temp = updated[section];
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!temp[keys[i]]) temp[keys[i]] = {};
-        temp = temp[keys[i]];
-      }
-      temp[keys[keys.length - 1]] = value;
+ const handleChange = (section, path, value) => {
+  setFormData((prevData) => {
+    const updated = { ...prevData };
+
+    // ✅ If no section is provided, treat it as top-level (e.g., engineer, date)
+    if (!section) {
+      updated[path] = value;
       return updated;
-    });
-  };
+    }
+
+    // ✅ Otherwise, nested field logic
+    if (!updated[section]) updated[section] = {};
+    const keys = path.split(".");
+    let temp = updated[section];
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!temp[keys[i]]) temp[keys[i]] = {};
+      temp = temp[keys[i]];
+    }
+    temp[keys[keys.length - 1]] = value;
+    return updated;
+  });
+};
+
+
 
   const handleAlertChange = (section, key, index, field, value) => {
     setFormData((prev) => {
@@ -144,9 +155,75 @@ export default function useVmwareForm() {
     });
   };
 
-  const handleSubmit = () => {
-    console.log("Submitted form data:", formData);
-  };
+  
+
+const handleSubmit = () => {
+  const engineer = formData.engineer?.trim() || "unknown";
+
+  // Extract initials
+  const initials = engineer
+    .split(" ")
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "XX";
+
+  const dateObj = new Date(formData.date);
+  const datePart = !isNaN(dateObj)
+    ? dateObj.toISOString().split("T")[0]
+    : "unknown-date";
+
+  const fileName = `vsan-checklist-${initials}-${datePart}.pdf`;
+
+  const doc = new jsPDF();
+  let y = 10;
+
+  doc.setFontSize(14);
+  doc.text(`vSAN Daily Checklist`, 10, y);
+  y += 10;
+  doc.setFontSize(11);
+  doc.text(`Date: ${datePart}`, 10, y);
+  y += 6;
+  doc.text(`Engineer: ${initials}`, 10, y);
+  y += 10;
+
+  const alerts = formData.vsan?.alerts || {};
+  Object.entries(alerts).forEach(([key, section]) => {
+    doc.setFont(undefined, "bold");
+    doc.text(`Client: ${key}`, 10, y);
+    y += 6;
+    doc.setFont(undefined, "normal");
+
+    doc.text(`Alert Generated: ${section.alert || "unknown"}`, 10, y);
+    y += 6;
+
+    if (section.alert === "yes" && Array.isArray(section.rows)) {
+      section.rows.forEach((row, i) => {
+        doc.text(`• Alert ${i + 1}`, 12, y);
+        y += 6;
+        doc.text(`  - Type: ${row.alertType || "-"}`, 14, y);
+        y += 6;
+        doc.text(`  - Host: ${row.host || "-"}`, 14, y);
+        y += 6;
+        doc.text(`  - Details: ${row.details || "-"}`, 14, y);
+        y += 6;
+        doc.text(`  - Ticket: ${row.ticket || "-"}`, 14, y);
+        y += 6;
+        doc.text(`  - Notes: ${row.notes || "-"}`, 14, y);
+        y += 8;
+      });
+    } else {
+      y += 4;
+    }
+
+    if (y > 270) {
+      doc.addPage();
+      y = 10;
+    }
+  });
+
+  doc.save(fileName);
+};
+
+
 
   const generateTicketBody = (alert, key) => {
   const engineer = typeof formData.engineer === "string"

@@ -1,5 +1,6 @@
-// useSolarWindsForm.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const defaultRowTemplate = {
   alertType: "",
@@ -25,6 +26,12 @@ export default function useSolarWindsForm() {
   });
 
   const [selectAll, setSelectAll] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [validationMessage, setValidationMessage] = useState("");
+
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
 
   const handleChange = (section, path, value) => {
     setFormData((prevData) => {
@@ -105,9 +112,90 @@ export default function useSolarWindsForm() {
     }));
   };
 
-  const handleSubmit = () => {
-    console.log("Submitted form data:", formData);
+  const validateForm = () => {
+    const { servicesRunning, alertsGenerated, alerts } = formData.solarwinds;
+
+    if (!servicesRunning || !alertsGenerated) {
+      setIsFormValid(false);
+      setValidationMessage(
+        "⚠️ Please answer all “services running” and “alert generated” questions before submitting."
+      );
+      return;
+    }
+
+    if (alertsGenerated === "yes") {
+      for (let alert of alerts) {
+        const hasTicketNA = ["na", "n/a", "NA", "N/A"].includes(alert.ticket?.trim());
+        if (
+          !alert.alertType ||
+          !alert.name ||
+          !alert.details ||
+          !alert.time ||
+          !alert.ticket ||
+          (hasTicketNA && !alert.notes)
+        ) {
+          setIsFormValid(false);
+          setValidationMessage(
+            "⚠️ Please complete all alert fields (Type, Alert Name, Details, Trigger Time, Ticket), and Notes if Ticket is N/A."
+          );
+          return;
+        }
+      }
+    }
+
+    setIsFormValid(true);
+    setValidationMessage("");
   };
+
+  const handleSubmit = () => {
+    const { engineer, date, solarwinds } = formData;
+
+    const initials = engineer
+      .split(" ")
+      .map((n) => n[0]?.toUpperCase())
+      .join("") || "XX";
+
+    const dateObj = new Date(date);
+    const formattedDate = !isNaN(dateObj) ? dateObj.toISOString().split("T")[0] : "unknown-date";
+
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text("SolarWinds Daily Checklist", 14, 20);
+
+    doc.setFontSize(11);
+    doc.text(`Engineer: ${engineer || "Unknown"}`, 14, 30);
+    doc.text(`Date: ${formattedDate}`, 14, 37);
+    doc.text(`Services Running: ${solarwinds.servicesRunning || "N/A"}`, 14, 44);
+    if (solarwinds.servicesRunning === "no") {
+      doc.text(`Service Down Ticket: ${solarwinds.serviceDownTicket || "-"}`, 14, 51);
+    }
+    doc.text(`Client: ${solarwinds.client || "Multiple"}`, 14, 58);
+    doc.text(`Alerts Generated: ${solarwinds.alertsGenerated || "N/A"}`, 14, 65);
+
+    if (solarwinds.alertsGenerated === "yes" && solarwinds.alerts.length > 0) {
+      const alertRows = solarwinds.alerts.map((a, idx) => [
+        idx + 1,
+        a.alertType || "",
+        a.name || "",
+        a.details || "",
+        a.time || "",
+        a.ticket || "",
+        a.notes || "",
+      ]);
+
+      doc.autoTable({
+        head: [["#", "Type", "Name", "Details", "Time", "Ticket", "Notes"]],
+        body: alertRows,
+        startY: 72,
+        styles: { fontSize: 9 },
+      });
+    }
+
+    doc.save(`solarwinds-checklist-${initials}-${formattedDate}.pdf`);
+  };
+
+  const generateTicketSubject = (alert) =>
+    encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
 
   const generateTicketBody = (alert) => {
     const engineer = typeof formData.engineer === "string"
@@ -122,9 +210,6 @@ export default function useSolarWindsForm() {
     );
   };
 
-  const generateTicketSubject = (alert) =>
-    encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
-
   return {
     formData,
     handleChange,
@@ -137,5 +222,7 @@ export default function useSolarWindsForm() {
     handleSubmit,
     generateTicketBody,
     generateTicketSubject,
+    isFormValid,
+    validationMessage,
   };
 }

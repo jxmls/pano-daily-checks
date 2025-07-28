@@ -1,4 +1,5 @@
-//VmwareForm.js
+// VmwareForm.js
+// VmwareForm.js
 import React, { useEffect } from "react";
 import useVmwareForm from "./useVmwareForm";
 
@@ -13,20 +14,56 @@ export default function VmwareForm({ onBackToDashboard }) {
     toggleSelectAll,
     handleSubmit,
     generateTicketBody,
-    generateTicketSubject
+    generateTicketSubject,
   } = useVmwareForm();
+
+  const isSubmissionReady = () => {
+    const requiredKeys = ["clarion", "panoptics", "volac"];
+    const alerts = formData.vsan?.alerts || {};
+
+    return requiredKeys.every((key) => {
+      const alert = alerts[key];
+      const alertValue = alert?.alert;
+
+      if (alertValue !== "yes" && alertValue !== "no") return false;
+
+      if (alertValue === "yes") {
+        const rows = alert?.rows || [];
+        if (rows.length === 0) return false;
+
+        return rows.every(
+          (row) =>
+            row.alertType?.trim() &&
+            row.host?.trim() &&
+            row.details?.trim() &&
+            row.ticket?.trim()
+        );
+      }
+
+      return true;
+    });
+  };
 
   useEffect(() => {
     const storedEngineer = localStorage.getItem("engineerName") || "";
     const storedDate = localStorage.getItem("checkDate") || "";
     handleChange(null, "engineer", storedEngineer);
     handleChange(null, "date", storedDate);
+
+    const requiredKeys = ["clarion", "panoptics", "volac"];
+    requiredKeys.forEach((key) => {
+      if (!formData.vsan.alerts[key]) {
+        handleChange("vsan", `alerts.${key}.alert`, "");
+      }
+    });
   }, []);
 
   const openEmailClient = (row, key) => {
     const subject = decodeURIComponent(generateTicketSubject(row));
     const body = decodeURIComponent(generateTicketBody(row, key));
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
   };
 
   const renderTable = (key) => {
@@ -55,7 +92,13 @@ export default function VmwareForm({ onBackToDashboard }) {
               <tr
                 key={index}
                 onClick={() => toggleRowSelection("vsan", key, index)}
-                className={`cursor-pointer ${alert.selected ? "bg-blue-100" : index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                className={`cursor-pointer ${
+                  alert.selected
+                    ? "bg-blue-100"
+                    : index % 2 === 0
+                    ? "bg-white"
+                    : "bg-gray-50"
+                }`}
               >
                 <td className="border px-3 py-2 text-center">
                   <div
@@ -77,7 +120,9 @@ export default function VmwareForm({ onBackToDashboard }) {
                     <select
                       className="w-full border rounded px-2 py-1"
                       value={alert.alertType || ""}
-                      onChange={(e) => handleAlertChange("vsan", key, index, "alertType", e.target.value)}
+                      onChange={(e) =>
+                        handleAlertChange("vsan", key, index, "alertType", e.target.value)
+                      }
                     >
                       <option value="">Select</option>
                       <option value="Warning">Warning</option>
@@ -92,7 +137,9 @@ export default function VmwareForm({ onBackToDashboard }) {
                     <input
                       className="w-full border rounded px-2 py-1"
                       value={alert.host || ""}
-                      onChange={(e) => handleAlertChange("vsan", key, index, "host", e.target.value)}
+                      onChange={(e) =>
+                        handleAlertChange("vsan", key, index, "host", e.target.value)
+                      }
                     />
                   </div>
                 </td>
@@ -101,7 +148,9 @@ export default function VmwareForm({ onBackToDashboard }) {
                     <input
                       className="w-full border rounded px-2 py-1"
                       value={alert.details || ""}
-                      onChange={(e) => handleAlertChange("vsan", key, index, "details", e.target.value)}
+                      onChange={(e) =>
+                        handleAlertChange("vsan", key, index, "details", e.target.value)
+                      }
                     />
                   </div>
                 </td>
@@ -110,7 +159,9 @@ export default function VmwareForm({ onBackToDashboard }) {
                     <input
                       className="w-full border rounded px-2 py-1"
                       value={alert.ticket || ""}
-                      onChange={(e) => handleAlertChange("vsan", key, index, "ticket", e.target.value)}
+                      onChange={(e) =>
+                        handleAlertChange("vsan", key, index, "ticket", e.target.value)
+                      }
                     />
                   </div>
                 </td>
@@ -119,7 +170,9 @@ export default function VmwareForm({ onBackToDashboard }) {
                     <input
                       className="w-full border rounded px-2 py-1"
                       value={alert.notes || ""}
-                      onChange={(e) => handleAlertChange("vsan", key, index, "notes", e.target.value)}
+                      onChange={(e) =>
+                        handleAlertChange("vsan", key, index, "notes", e.target.value)
+                      }
                     />
                   </div>
                 </td>
@@ -168,7 +221,10 @@ export default function VmwareForm({ onBackToDashboard }) {
       <ul className="list-disc ml-6 mb-4">
         {links.map((link, i) => (
           <li key={i}>
-            {link.label} - <a className="text-blue-600 underline" href={link.href}>{link.href}</a>
+            {link.label} -{" "}
+            <a className="text-blue-600 underline" href={link.href}>
+              {link.href}
+            </a>
           </li>
         ))}
       </ul>
@@ -182,7 +238,8 @@ export default function VmwareForm({ onBackToDashboard }) {
               value="yes"
               checked={formData.vsan?.alerts?.[key]?.alert === "yes"}
               onChange={() => handleChange("vsan", `alerts.${key}.alert`, "yes")}
-            /> Yes
+            />{" "}
+            Yes
           </label>
           <label>
             <input
@@ -191,7 +248,8 @@ export default function VmwareForm({ onBackToDashboard }) {
               value="no"
               checked={formData.vsan?.alerts?.[key]?.alert === "no"}
               onChange={() => handleChange("vsan", `alerts.${key}.alert`, "no")}
-            /> No
+            />{" "}
+            No
           </label>
         </div>
       </div>
@@ -202,24 +260,60 @@ export default function VmwareForm({ onBackToDashboard }) {
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">VMware vSAN Checks</h1>
-      {renderSection("Clarion Events Ltd.", "For accessing the following VMware vSAN environments, please use Clarion RDS farm or UK1-PAN01 and then use Google Chrome to browse.", [
-        { label: "CT", href: "https://us2-vcsa01.clarionevents.local/" },
-        { label: "RP", href: "https://10.75.4.201" },
-        { label: "RP", href: "https://10.75.4.202" },
-        { label: "TUL", href: "https://us1-vcsa01.clarionevents.local/" },
-        { label: "TUL", href: "https://us3-vcsa01.clarionevents.local/" },
-        { label: "SG", href: "https://sg-vc-02.clarionevents.local/" },
-        { label: "UK", href: "https://clr-vcs01.clarionevents.local/" }
-      ], "clarion")}
-      {renderSection("Panoptics Global Ltd.", "Following VMware vSAN environments can be accessed from your laptop itself if connected to Always On VPN, alternatively connect to Panoptics RDS then open Google Chrome or your preferred browser and navigate to the following:", [
-        { label: "Panoptics Global Ltd. - Production", href: "https://uk-pan-vcs01.panoptics.local/ui/" },
-        { label: "Panoptics Global Ltd. - Production", href: "https://172.16.17.200/" },
-        { label: "Panoptics Global Ltd. - Production", href: "https://172.16.17.88/ui/" },
-        { label: "Panoptics Global Ltd. - Backup Infrastructure", href: "https://backup-vsan-vcsa01.panoptics.local/" }
-      ], "panoptics")}
-      {renderSection("Volac International", "To access Volac International VMware vSAN environment, you will need to first connect to Volac VPN using Cisco AnyConnect VPN client on your laptop. Once connected, open Google Chrome or your preferred browser and navigate to:", [
-        { label: "", href: "https://10.22.1.200/" }
-      ], "volac")}
+
+      {renderSection(
+        "Clarion Events Ltd.",
+        "For accessing the following VMware vSAN environments, please use Clarion RDS farm or UK1-PAN01 and then use Google Chrome to browse.",
+        [
+          { label: "CT", href: "https://us2-vcsa01.clarionevents.local/" },
+          { label: "RP", href: "https://10.75.4.201" },
+          { label: "RP", href: "https://10.75.4.202" },
+          { label: "TUL", href: "https://us1-vcsa01.clarionevents.local/" },
+          { label: "TUL", href: "https://us3-vcsa01.clarionevents.local/" },
+          { label: "SG", href: "https://sg-vc-02.clarionevents.local/" },
+          { label: "UK", href: "https://clr-vcs01.clarionevents.local/" },
+        ],
+        "clarion"
+      )}
+
+      {renderSection(
+        "Panoptics Global Ltd.",
+        "Following VMware vSAN environments can be accessed from your laptop itself if connected to Always On VPN, alternatively connect to Panoptics RDS then open Google Chrome or your preferred browser and navigate to the following:",
+        [
+          { label: "Production", href: "https://uk-pan-vcs01.panoptics.local/ui/" },
+          { label: "Production", href: "https://172.16.17.200/" },
+          { label: "Production", href: "https://172.16.17.88/ui/" },
+          { label: "Backup", href: "https://backup-vsan-vcsa01.panoptics.local/" },
+        ],
+        "panoptics"
+      )}
+
+      {renderSection(
+        "Volac International",
+        "To access Volac International VMware vSAN environment, you will need to first connect to Volac VPN using Cisco AnyConnect VPN client on your laptop. Once connected, open Google Chrome or your preferred browser and navigate to:",
+        [{ label: "", href: "https://10.22.1.200/" }],
+        "volac"
+      )}
+
+      {isSubmissionReady() ? (
+        <div className="flex justify-center mt-8">
+          <button
+            onClick={() => {
+              handleSubmit();
+              onBackToDashboard();
+            }}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Submit Checklist
+          </button>
+        </div>
+      ) : (
+        <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">
+          ⚠️ Please answer all “Alert generated?” questions and fill in all required fields (Alert
+          Type, Host, Details, Ticket) for any section where you selected “Yes”.
+        </p>
+      )}
+
       <div className="mt-10">
         <button
           onClick={onBackToDashboard}
