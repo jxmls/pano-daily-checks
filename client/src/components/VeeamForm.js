@@ -21,17 +21,17 @@ export default function VeeamForm({ onBackToDashboard }) {
   } = useVeeamForm();
 
   return (
-    <div className="min-h-screen bg-white text-black p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">Veeam Backup Checks</h1>
+    <div className="min-h-screen bg-white text-black p-6 max-w-5xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Veeam Backup Checks</h1>
 
-      <p className="mb-4 text-sm text-center">
-        Clarion Events Veeam Backup<br />
+      <p className="mb-4 text-sm">
+        <strong>Clarion Events Veeam Backup</strong><br />
         For accessing remote environments, use the Clarion RDS farm or UK1-PAN01 and RDP to:<br />
         <strong>CT:</strong> US2-VEEAM01 | <strong>TUL:</strong> US1-VEEAM01 | <strong>SG:</strong> SG-VEEAM01 | <strong>UK:</strong> UK1-VEEAM365
       </p>
 
       {/* Clarion Events Alerts Generated */}
-      <div className="mb-6 text-center">
+      <div className="mb-6">
         <label className="font-semibold block mb-2">Alert generated?</label>
         <label className="mr-4">
           <input
@@ -75,7 +75,7 @@ export default function VeeamForm({ onBackToDashboard }) {
 
       {/* Local Veeam Backup Section */}
       <div className="mt-12">
-        <p className="mb-4 text-sm text-center">
+        <p className="mb-4 text-sm">
           <strong>Local Veeam Backup</strong><br />
           URL: <a href="https://192.168.69.219:1280/" target="_blank" rel="noreferrer" className="text-blue-700 underline">https://192.168.69.219:1280/</a><br />
           Sign in with your ADM account.<br />
@@ -83,7 +83,7 @@ export default function VeeamForm({ onBackToDashboard }) {
           You will find both Error and Warning messages under Virtual Machines and Microsoft 365 Objects tab.
         </p>
 
-        <div className="mb-6 text-center">
+        <div className="mb-6">
           <label className="font-semibold block mb-2">Alert generated?</label>
           <label className="mr-4">
             <input
