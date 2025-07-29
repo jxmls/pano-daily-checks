@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import useCheckpointForm from "./useCheckpointForm";
+import useCheckpointForm from "../hooks/useCheckpointForm";
 
 export default function CheckpointForm({ onBackToDashboard }) {
   const {

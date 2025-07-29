@@ -1,7 +1,7 @@
 // VmwareForm.js
-// VmwareForm.js
+
 import React, { useEffect } from "react";
-import useVmwareForm from "./useVmwareForm";
+import useVmwareForm from "../hooks/useVmwareForm";
 
 export default function VmwareForm({ onBackToDashboard }) {
   const {

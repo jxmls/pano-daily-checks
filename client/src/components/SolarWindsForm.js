@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import useSolarWindsForm from "./useSolarWindsForm";
+import useSolarWindsForm from "../hooks/useSolarWindsForm";
 
 export default function SolarWindsForm({ onBackToDashboard }) {
   const {
