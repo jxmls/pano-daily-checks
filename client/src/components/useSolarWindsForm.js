@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
+
 
 const defaultRowTemplate = {
   alertType: "",
@@ -18,7 +19,7 @@ export default function useSolarWindsForm() {
     date: "",
     solarwinds: {
       servicesRunning: "",
-      client: "",
+      client: "Multiple",
       serviceDownTicket: "",
       alerts: [],
       alertsGenerated: "",
@@ -148,65 +149,82 @@ export default function useSolarWindsForm() {
   };
 
   const handleSubmit = () => {
-    const { engineer, date, solarwinds } = formData;
+  const solarwinds = formData.solarwinds || {};
+  const engineer = solarwinds.engineer || localStorage.getItem("engineerName") || "Unknown";
+  const date = solarwinds.date || localStorage.getItem("checkDate") || "";
 
-    const initials = engineer
+  const initials =
+    engineer
       .split(" ")
       .map((n) => n[0]?.toUpperCase())
       .join("") || "XX";
 
-    const dateObj = new Date(date);
-    const formattedDate = !isNaN(dateObj) ? dateObj.toISOString().split("T")[0] : "unknown-date";
+  const dateObj = new Date(date);
+  const formattedDate = !isNaN(dateObj)
+    ? dateObj.toISOString().split("T")[0]
+    : "unknown-date";
 
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("SolarWinds Daily Checklist", 14, 20);
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text("SolarWinds Daily Checklist", 14, 20);
 
-    doc.setFontSize(11);
-    doc.text(`Engineer: ${engineer || "Unknown"}`, 14, 30);
-    doc.text(`Date: ${formattedDate}`, 14, 37);
-    doc.text(`Services Running: ${solarwinds.servicesRunning || "N/A"}`, 14, 44);
-    if (solarwinds.servicesRunning === "no") {
-      doc.text(`Service Down Ticket: ${solarwinds.serviceDownTicket || "-"}`, 14, 51);
+  doc.setFontSize(11);
+  doc.text(`Engineer: ${engineer}`, 14, 30);
+  doc.text(`Date: ${formattedDate}`, 14, 37);
+  doc.text(`Services Running: ${solarwinds.servicesRunning || "N/A"}`, 14, 44);
+  if (solarwinds.servicesRunning === "no") {
+    doc.text(
+      `Service Down Ticket: ${solarwinds.serviceDownTicket || "-"}`,
+      14,
+      51
+    );
+  }
+  doc.text(`Client: ${solarwinds.client || "Multiple"}`, 14, 58);
+  doc.text(`Alerts Generated: ${solarwinds.alertsGenerated || "N/A"}`, 14, 65);
+
+  if (solarwinds.alertsGenerated === "yes" && solarwinds.alerts.length > 0) {
+    const alertRows = solarwinds.alerts.map((a, idx) => [
+      idx + 1,
+      a.alertType || "",
+      a.name || "",
+      a.details || "",
+      a.time || "",
+      a.ticket || "",
+      a.notes || "",
+    ]);
+
+    autoTable(doc, {
+      head: [["#", "Type", "Name", "Details", "Time", "Ticket", "Notes"]],
+      body: alertRows,
+      startY: 72,
+      styles: { fontSize: 9 },
+    });
+  }
+
+  doc.save(`solarwinds-checklist-${initials}-${formattedDate}.pdf`);
+};
+
+
+  const handleFinalSubmit = () => {
+    if (isFormValid) {
+      handleSubmit();
     }
-    doc.text(`Client: ${solarwinds.client || "Multiple"}`, 14, 58);
-    doc.text(`Alerts Generated: ${solarwinds.alertsGenerated || "N/A"}`, 14, 65);
-
-    if (solarwinds.alertsGenerated === "yes" && solarwinds.alerts.length > 0) {
-      const alertRows = solarwinds.alerts.map((a, idx) => [
-        idx + 1,
-        a.alertType || "",
-        a.name || "",
-        a.details || "",
-        a.time || "",
-        a.ticket || "",
-        a.notes || "",
-      ]);
-
-      doc.autoTable({
-        head: [["#", "Type", "Name", "Details", "Time", "Ticket", "Notes"]],
-        body: alertRows,
-        startY: 72,
-        styles: { fontSize: 9 },
-      });
-    }
-
-    doc.save(`solarwinds-checklist-${initials}-${formattedDate}.pdf`);
   };
 
   const generateTicketSubject = (alert) =>
     encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
 
   const generateTicketBody = (alert) => {
-    const engineer = typeof formData.engineer === "string"
-      ? formData.engineer
-      : formData.engineer?.name || "Unknown";
+    const engineer =
+      typeof formData.engineer === "string"
+        ? formData.engineer
+        : formData.engineer?.name || "Unknown";
 
     return encodeURIComponent(
       `Client: ${formData.solarwinds.client || "Multiple"}\n` +
-      `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-      `Alert Type: ${alert.alertType || "N/A"}\n` +
-      `Trigger Time: ${alert.time}\nAssign to: ${engineer}\nNotes: ${alert.notes}`
+        `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
+        `Alert Type: ${alert.alertType || "N/A"}\n` +
+        `Trigger Time: ${alert.time}\nAssign to: ${engineer}\nNotes: ${alert.notes}`
     );
   };
 
@@ -219,10 +237,11 @@ export default function useSolarWindsForm() {
     deleteSelectedRows,
     toggleSelectAll,
     selectAll,
-    handleSubmit,
-    generateTicketBody,
-    generateTicketSubject,
     isFormValid,
     validationMessage,
+    handleSubmit,
+    handleFinalSubmit,
+    generateTicketBody,
+    generateTicketSubject,
   };
 }

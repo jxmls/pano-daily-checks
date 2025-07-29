@@ -18,14 +18,15 @@ export default function Dashboard({ onSelectModule, onSignOut }) {
           <button
   key={mod.id}
   onClick={() => {
-    const fullName = "Jose Lucar"; // You can replace with dynamic user name if needed
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const fullName = localStorage.getItem("engineerName") || "Unknown";
+  const today = localStorage.getItem("checkDate") || new Date().toISOString().split("T")[0];
 
-    localStorage.setItem("engineerName", fullName);
-    localStorage.setItem("checkDate", today);
+  localStorage.setItem("engineerName", fullName);
+  localStorage.setItem("checkDate", today);
 
-    onSelectModule(mod.id);
-  }}
+  onSelectModule(mod.id);
+}}
+
   className="w-32 h-32 bg-white rounded-lg shadow hover:shadow-md transition duration-150 border border-gray-200 flex items-center justify-center text-xs font-medium text-gray-800 text-center p-2"
 >
   {mod.title}

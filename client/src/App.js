@@ -4,6 +4,8 @@ import Dashboard from "./components/Dashboard";
 import SolarWindsForm from "./components/SolarWindsForm";
 import VmwareForm from "./components/VmwareForm";
 import Header from "./components/Header";
+import CheckpointForm from "./components/CheckpointForm";
+
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -52,6 +54,13 @@ export default function App() {
             date={userData.date}
             onBackToDashboard={() => setScreen("dashboard")}
           />
+          ) : screen === "checkpoint" ? (
+  <CheckpointForm
+    engineer={userData.engineer}
+    date={userData.date}
+    onBackToDashboard={() => setScreen("dashboard")}
+  />
+
         ) : null}
       </div>
     </div>
