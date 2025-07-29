@@ -203,14 +203,14 @@ export default function CheckpointForm({ onBackToDashboard }) {
       {/* Validation + Submit */}
       {isFormValid ? (
         <div className="flex justify-center mt-8 gap-4">
-          <a
+          {/*<a
             href={`mailto:infra@panoptics.com?subject=Checkpoint Daily Check - ${formData.date}&body=${encodeURIComponent(
               generateEmailBody()
             )}`}
             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
           >
             📧 Email Summary
-          </a>
+          </a>*/}
           <button
             onClick={handleFinalSubmit}
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"

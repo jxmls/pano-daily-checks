@@ -1,6 +1,8 @@
 // useVmwareForm.js
 import { useState } from "react";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { addHeader } from "../utils/pdfutils";
 
 const defaultVmwareRow = {
   alertType: "",
@@ -155,68 +157,67 @@ export default function useVmwareForm() {
     });
   };
 
-  
-
-const handleSubmit = () => {
+ const handleSubmit = () => {
   const engineer = formData.engineer?.trim() || "unknown";
-
-  // Extract initials
   const initials = engineer
     .split(" ")
     .map((part) => part[0]?.toUpperCase())
     .join("") || "XX";
 
   const dateObj = new Date(formData.date);
-  const datePart = !isNaN(dateObj)
-    ? dateObj.toISOString().split("T")[0]
-    : "unknown-date";
+  const date = !isNaN(dateObj) ? dateObj.toISOString().split("T")[0] : "unknown-date";
 
-  const fileName = `vsan-checklist-${initials}-${datePart}.pdf`;
-
+  const fileName = `vsan-checklist-${initials}-${date}.pdf`;
   const doc = new jsPDF();
-  let y = 10;
 
-  doc.setFontSize(14);
-  doc.text(`vSAN Daily Checklist`, 10, y);
-  y += 10;
-  doc.setFontSize(11);
-  doc.text(`Date: ${datePart}`, 10, y);
-  y += 6;
-  doc.text(`Engineer: ${initials}`, 10, y);
-  y += 10;
+  addHeader(doc, "vSAN Daily Checklist", engineer, date);
 
+  let y = 50; // Give space after header
   const alerts = formData.vsan?.alerts || {};
+
   Object.entries(alerts).forEach(([key, section]) => {
     doc.setFont(undefined, "bold");
-    doc.text(`Client: ${key}`, 10, y);
-    y += 6;
+    doc.text(`Client: ${key}`, 14, y);
+    y += 7;
     doc.setFont(undefined, "normal");
 
-    doc.text(`Alert Generated: ${section.alert || "unknown"}`, 10, y);
-    y += 6;
+    doc.text(`Alert Generated: ${section.alert || "no"}`, 14, y);
+    y += 7;
 
-    if (section.alert === "yes" && Array.isArray(section.rows)) {
-      section.rows.forEach((row, i) => {
-        doc.text(`• Alert ${i + 1}`, 12, y);
-        y += 6;
-        doc.text(`  - Type: ${row.alertType || "-"}`, 14, y);
-        y += 6;
-        doc.text(`  - Host: ${row.host || "-"}`, 14, y);
-        y += 6;
-        doc.text(`  - Details: ${row.details || "-"}`, 14, y);
-        y += 6;
-        doc.text(`  - Ticket: ${row.ticket || "-"}`, 14, y);
-        y += 6;
-        doc.text(`  - Notes: ${row.notes || "-"}`, 14, y);
-        y += 8;
+    if (section.alert === "yes" && Array.isArray(section.rows) && section.rows.length > 0) {
+      const tableRows = section.rows.map((row, index) => [
+        index + 1,
+        row.alertType || "-",
+        row.host || "-",
+        row.details || "-",
+        row.ticket || "-",
+        row.notes || "-",
+      ]);
+
+      autoTable(doc, {
+        startY: y + 2,
+        head: [["#", "Type", "Host", "Details", "Ticket", "Notes"]],
+        body: tableRows,
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [40, 116, 166],
+          textColor: 255,
+          halign: "center",
+        },
+        margin: { left: 14, right: 14 },
       });
+
+      y = doc.lastAutoTable.finalY + 10;
     } else {
-      y += 4;
+      y += 8;
     }
 
-    if (y > 270) {
+    if (y > 260) {
       doc.addPage();
-      y = 10;
+      y = 20;
     }
   });
 
@@ -224,27 +225,10 @@ const handleSubmit = () => {
 };
 
 
-
-  const generateTicketBody = (alert, key) => {
-  const engineer = typeof formData.engineer === "string"
-    ? formData.engineer
-    : formData.engineer?.name || "Unknown";
-
-  return encodeURIComponent(
-    `Environment: ${key}\n` +
-    `Alert Type: ${alert.alertType}\n` +
-    `Host: ${alert.host}\n` +
-    `Details: ${alert.details}\n` +
-    `Ticket: ${alert.ticket || "-"}\n` +
-    `Notes: ${alert.notes || "-"}\n` +
-    `Engineer: ${engineer}`
-  );
-};
-
 const generateTicketSubject = (alert) =>
   encodeURIComponent(`vSAN Alert - ${alert.host || "Unknown Host"}`);
 
-  return {
+    return {
     formData,
     handleChange,
     handleAlertChange,
@@ -253,7 +237,7 @@ const generateTicketSubject = (alert) =>
     deleteSelectedRows,
     toggleSelectAll,
     handleSubmit,
-    generateTicketBody,
     generateTicketSubject,
   };
+
 }

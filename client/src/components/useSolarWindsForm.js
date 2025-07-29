@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { addHeader } from "../utils/pdfutils";
 
 
 const defaultRowTemplate = {
@@ -147,11 +148,12 @@ export default function useSolarWindsForm() {
     setIsFormValid(true);
     setValidationMessage("");
   };
-
-  const handleSubmit = () => {
+const handleSubmit = () => {
   const solarwinds = formData.solarwinds || {};
-  const engineer = solarwinds.engineer || localStorage.getItem("engineerName") || "Unknown";
-  const date = solarwinds.date || localStorage.getItem("checkDate") || "";
+  const engineer =
+    formData.engineer || localStorage.getItem("engineerName") || "Unknown";
+  const date =
+    formData.date || localStorage.getItem("checkDate") || new Date().toISOString();
 
   const initials =
     engineer
@@ -165,22 +167,30 @@ export default function useSolarWindsForm() {
     : "unknown-date";
 
   const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("SolarWinds Daily Checklist", 14, 20);
+
+  // 🔹 Shared header with logo and title
+  addHeader(doc, "SolarWinds Daily Checklist", engineer, formattedDate);
+
+  let y = 50;
 
   doc.setFontSize(11);
-  doc.text(`Engineer: ${engineer}`, 14, 30);
-  doc.text(`Date: ${formattedDate}`, 14, 37);
-  doc.text(`Services Running: ${solarwinds.servicesRunning || "N/A"}`, 14, 44);
+  doc.text(`Services Running: ${solarwinds.servicesRunning || "N/A"}`, 14, y);
+  y += 7;
+
   if (solarwinds.servicesRunning === "no") {
     doc.text(
       `Service Down Ticket: ${solarwinds.serviceDownTicket || "-"}`,
       14,
-      51
+      y
     );
+    y += 7;
   }
-  doc.text(`Client: ${solarwinds.client || "Multiple"}`, 14, 58);
-  doc.text(`Alerts Generated: ${solarwinds.alertsGenerated || "N/A"}`, 14, 65);
+
+  doc.text(`Client: ${solarwinds.client || "Multiple"}`, 14, y);
+  y += 7;
+
+  doc.text(`Alerts Generated: ${solarwinds.alertsGenerated || "N/A"}`, 14, y);
+  y += 7;
 
   if (solarwinds.alertsGenerated === "yes" && solarwinds.alerts.length > 0) {
     const alertRows = solarwinds.alerts.map((a, idx) => [
@@ -196,13 +206,14 @@ export default function useSolarWindsForm() {
     autoTable(doc, {
       head: [["#", "Type", "Name", "Details", "Time", "Ticket", "Notes"]],
       body: alertRows,
-      startY: 72,
+      startY: y + 3,
       styles: { fontSize: 9 },
     });
   }
 
   doc.save(`solarwinds-checklist-${initials}-${formattedDate}.pdf`);
 };
+
 
 
   const handleFinalSubmit = () => {

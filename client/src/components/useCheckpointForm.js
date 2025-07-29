@@ -1,6 +1,7 @@
 import { useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { addHeader } from "../utils/pdfutils";
 
 
 export default function useCheckpointForm(onBackToDashboard) {
@@ -178,59 +179,58 @@ ${formatAlerts(brewery.alerts)}
   };
 
   const handleSubmit = () => {
-    const { engineer, date, panoptics, brewery } = formData;
-    const initials = engineer
-      .split(" ")
-      .map((n) => n[0]?.toUpperCase())
-      .join("") || "XX";
-    const dateObj = new Date(date);
-    const formattedDate = !isNaN(dateObj)
-      ? dateObj.toISOString().split("T")[0]
-      : "unknown-date";
+  const { engineer, date, panoptics, brewery } = formData;
+  const initials = (engineer || "")
+  .split(" ")
+  .map((n) => n[0]?.toUpperCase())
+  .join("") || "XX";
 
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Checkpoint Checks", 14, 20);
-    doc.setFontSize(11);
-    doc.text(`Engineer: ${engineer || "Unknown"}`, 14, 30);
-    doc.text(`Date: ${formattedDate}`, 14, 37);
 
-    const addSection = (title, data, startY) => {
-      doc.setFontSize(12);
-      doc.text(title, 14, startY);
-      doc.setFontSize(10);
-      doc.text(`Alert: ${data.alertStatus}`, 14, startY + 7);
-      doc.text(`Details: ${data.details}`, 14, startY + 14);
-      doc.text(`Reference: ${data.reference}`, 14, startY + 21);
+  const dateObj = new Date(date);
+  const formattedDate = !isNaN(dateObj)
+    ? dateObj.toISOString().split("T")[0]
+    : "unknown-date";
 
-      if (data.alerts.length > 0) {
-        const alertRows = data.alerts.map((a, idx) => [
-          idx + 1,
-          a.severity || "",
-          a.name || "",
-          a.machine || "",
-          a.details || "",
-          a.ticket || "",
-          a.notes || "",
-        ]);
+  const doc = new jsPDF();
 
-        autoTable(doc, {
-          head: [["#", "Severity", "Name", "Machine", "Details", "Ticket", "Notes"]],
-          body: alertRows,
-          startY: startY + 28,
-          styles: { fontSize: 9 },
-        });
-      }
+  // 🔹 Shared header with logo + formatted date
+  addHeader(doc, "Checkpoint Checklist", engineer, formattedDate);
 
-      return doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : startY + 35;
-    };
+  const addSection = (title, data, startY) => {
+    doc.setFontSize(12);
+    doc.text(title, 14, startY);
+    doc.setFontSize(10);
+    doc.text(`Alert: ${data.alertStatus}`, 14, startY + 7);
+    doc.text(`Details: ${data.details}`, 14, startY + 14);
+    doc.text(`Reference: ${data.reference}`, 14, startY + 21);
 
-    let nextY = addSection("Panoptics Check Point", panoptics, 45);
-    addSection("The Brewery Check Point", brewery, nextY);
+    if (data.alerts.length > 0) {
+      const alertRows = data.alerts.map((a, idx) => [
+        idx + 1,
+        a.severity || "",
+        a.name || "",
+        a.machine || "",
+        a.details || "",
+        a.ticket || "",
+        a.notes || "",
+      ]);
 
-    doc.save(`checkpoint-checklist-${initials}-${formattedDate}.pdf`);
+      autoTable(doc, {
+        head: [["#", "Severity", "Name", "Machine", "Details", "Ticket", "Notes"]],
+        body: alertRows,
+        startY: startY + 28,
+        styles: { fontSize: 9 },
+      });
+    }
+
+    return doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : startY + 35;
   };
 
+  let nextY = addSection("Panoptics Check Point", panoptics, 50);
+  addSection("The Brewery Check Point", brewery, nextY);
+
+  doc.save(`checkpoint-checklist-${initials}-${formattedDate}.pdf`);
+};
   const handleFinalSubmit = () => {
   if (isFormValid) {
     handleSubmit();
