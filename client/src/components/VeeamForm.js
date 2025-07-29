@@ -22,9 +22,10 @@ export default function VeeamForm({ onBackToDashboard }) {
 
   return (
     <div className="min-h-screen bg-white text-black p-6 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Veeam Backup Checks</h1>
+  <h1 className="text-3xl font-bold mb-6 text-center">Veeam Backup Checks</h1>
 
-      <p className="mb-4 text-sm">
+  <p className="mb-4 text-sm">
+
         <strong>Clarion Events Veeam Backup</strong><br />
         For accessing remote environments, use the Clarion RDS farm or UK1-PAN01 and RDP to:<br />
         <strong>CT:</strong> US2-VEEAM01 | <strong>TUL:</strong> US1-VEEAM01 | <strong>SG:</strong> SG-VEEAM01 | <strong>UK:</strong> UK1-VEEAM365
