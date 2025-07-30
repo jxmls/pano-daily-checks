@@ -3,9 +3,9 @@ import React, { useState } from "react";
 export default function LoginScreen({ onLogin }) {
   const [engineer, setEngineer] = useState("");
   const [date, setDate] = useState(() => {
-  const today = new Date();
-  return today.toISOString().split("T")[0];
-    });
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,8 +27,17 @@ export default function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="bg-white w-full max-w-sm rounded-xl shadow-xl p-6">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center relative"
+      style={{
+        backgroundImage: `url(${require("../assets/background.jpg")})`,
+      }}
+    >
+      {/* Overlay for enhanced contrast */}
+      <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
+
+      {/* Login box */}
+      <div className="bg-white w-full max-w-sm rounded-xl shadow-xl p-6 relative z-10">
         <div className="flex justify-center mb-6">
           <img
             src="/panologo.png"
