@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 console.log("Dashboard loaded");
 
@@ -109,11 +109,36 @@ const modules = [
 export default function Dashboard({ onSelectModule, onSignOut }) {
   const engineerName = localStorage.getItem("engineerName") || "Engineer";
 
+  useEffect(() => {
+    const userTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    if (userTheme === "dark" || (!userTheme && systemPrefersDark)) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 bg-gradient-to-b from-slate-100 to-white">
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 bg-gradient-to-b from-slate-100 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 relative">
+      {/* Dark mode toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className="absolute top-4 right-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm px-3 py-1 rounded-md shadow hover:shadow-lg transition"
+        title="Toggle light/dark mode"
+      >
+        🌓 Toggle Theme
+      </button>
+
       {/* Welcome Message */}
-      <h1 className="text-2xl font-bold text-center text-gray-700 mb-6 tracking-tight">
-        👋 Welcome to the <span className="text-blue-600">Infrastructure Hub</span>, {engineerName}!
+      <h1 className="text-2xl font-bold text-center text-gray-700 dark:text-gray-100 mb-6 tracking-tight">
+        👋 Welcome to the <span className="text-blue-600 dark:text-blue-400">Infrastructure Hub</span>, {engineerName}!
       </h1>
 
       {/* Module Tiles */}
@@ -133,7 +158,7 @@ export default function Dashboard({ onSelectModule, onSignOut }) {
 
               onSelectModule(id);
             }}
-            className="w-24 h-24 sm:w-28 sm:h-28 bg-white rounded-2xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 border border-gray-200 flex flex-col items-center justify-center text-sm font-medium text-gray-700 text-center p-2"
+            className="w-24 h-24 sm:w-28 sm:h-28 bg-white dark:bg-gray-700 dark:text-white rounded-2xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 border border-gray-200 dark:border-gray-600 flex flex-col items-center justify-center text-sm font-medium text-gray-700 text-center p-2"
           >
             <div className="mb-1">{icon}</div>
             {title}
