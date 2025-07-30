@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import useVeeamForm from "../hooks/useVeeamForm";
 
 export default function VeeamForm({ onBackToDashboard }) {
@@ -20,18 +20,41 @@ export default function VeeamForm({ onBackToDashboard }) {
     isLocalSubmissionReady,
   } = useVeeamForm();
 
+  useEffect(() => {
+    const engineer = localStorage.getItem("engineerName") || "";
+    const date = localStorage.getItem("checkDate") || "";
+    handleChange("engineer", engineer);
+    handleChange("date", date);
+  }, []);
+
+  const allAnswered =
+    formData.alertsGenerated && formData.localAlertsGenerated;
+
+  const showSubmit =
+    allAnswered &&
+    ((formData.alertsGenerated === "no") ||
+      (formData.alertsGenerated === "yes" && isSubmissionReady())) &&
+    ((formData.localAlertsGenerated === "no") ||
+      (formData.localAlertsGenerated === "yes" && isLocalSubmissionReady()));
+
+  const openEmailClient = (row) => {
+    const subject = encodeURIComponent(`Veeam Alert: ${row.vbrHost}`);
+    const body = encodeURIComponent(
+      `Type: ${row.type}\nVBR Host: ${row.vbrHost}\nDetails: ${row.details}\nTicket: ${row.ticket}`
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div className="min-h-screen bg-white text-black p-6 max-w-5xl mx-auto">
-  <h1 className="text-3xl font-bold mb-6 text-center">Veeam Backup Checks</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Veeam Backup Checks</h1>
 
-  <p className="mb-4 text-sm">
-
+      <p className="mb-4 text-sm">
         <strong>Clarion Events Veeam Backup</strong><br />
         For accessing remote environments, use the Clarion RDS farm or UK1-PAN01 and RDP to:<br />
         <strong>CT:</strong> US2-VEEAM01 | <strong>TUL:</strong> US1-VEEAM01 | <strong>SG:</strong> SG-VEEAM01 | <strong>UK:</strong> UK1-VEEAM365
       </p>
 
-      {/* Clarion Events Alerts Generated */}
       <div className="mb-6">
         <label className="font-semibold block mb-2">Alert generated?</label>
         <label className="mr-4">
@@ -58,7 +81,6 @@ export default function VeeamForm({ onBackToDashboard }) {
         </label>
       </div>
 
-      {/* Clarion Events Table */}
       {formData.alertsGenerated === "yes" && (
         <div className="mt-4">
           {renderAlertTable(
@@ -69,12 +91,12 @@ export default function VeeamForm({ onBackToDashboard }) {
             addAlertRow,
             deleteSelectedRows,
             formData.selectAll,
-            ["US2-VEEAM01", "US1-VEEAM01", "SG-VEEAM01", "UK1-VEEAM365"]
+            ["US2-VEEAM01", "US1-VEEAM01", "SG-VEEAM01", "UK1-VEEAM365"],
+            openEmailClient
           )}
         </div>
       )}
 
-      {/* Local Veeam Backup Section */}
       <div className="mt-12">
         <p className="mb-4 text-sm">
           <strong>Local Veeam Backup</strong><br />
@@ -110,7 +132,6 @@ export default function VeeamForm({ onBackToDashboard }) {
           </label>
         </div>
 
-        {/* Local Table */}
         {formData.localAlertsGenerated === "yes" && (
           <div className="mt-4">
             {renderAlertTable(
@@ -132,22 +153,22 @@ export default function VeeamForm({ onBackToDashboard }) {
                 "SwimEngl-VBR01",
                 "UK1-Veeam365",
                 "Volac-VBR01"
-              ]
+              ],
+              openEmailClient
             )}
           </div>
         )}
       </div>
 
-      {/* Buttons */}
-      <div className="mt-10 flex flex-col items-center space-y-4">
+      <div className="mt-10 flex flex-col items-center">
         <button
           onClick={onBackToDashboard}
-          className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+          className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded mb-4 self-start"
         >
           Back
         </button>
 
-        {(isSubmissionReady() || isLocalSubmissionReady()) && (
+        {showSubmit && (
           <button
             onClick={() => {
               handleFinalSubmit();
@@ -163,8 +184,11 @@ export default function VeeamForm({ onBackToDashboard }) {
   );
 }
 
-// Reusable alert table component
-function renderAlertTable(alerts, toggleSelectAll, toggleRowSelection, handleAlertChange, addRow, deleteRows, selectAll, vbrHostOptions) {
+function renderAlertTable(alerts, toggleSelectAll, toggleRowSelection, handleAlertChange, addRow, deleteRows, selectAll, vbrHostOptions, openEmailClient) {
+  const selectedRow = (alerts || []).filter(
+    (r) => r.selected && r.type && r.vbrHost && r.details
+  );
+
   return (
     <>
       <table className="w-full text-sm border shadow rounded">
@@ -246,19 +270,27 @@ function renderAlertTable(alerts, toggleSelectAll, toggleRowSelection, handleAle
         </tbody>
       </table>
 
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4 flex flex-wrap items-center gap-4">
         <button
-          className="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded"
+          className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded text-sm"
           onClick={addRow}
         >
           ➕ Add Row
         </button>
         <button
-          className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded"
+          className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded text-sm"
           onClick={deleteRows}
         >
           🗑️ Delete Selected
         </button>
+        {selectedRow.length === 1 && (
+          <button
+            className="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded text-sm"
+            onClick={() => openEmailClient(selectedRow[0])}
+          >
+            📧 Email ({selectedRow[0].vbrHost})
+          </button>
+        )}
       </div>
     </>
   );

@@ -137,10 +137,11 @@ const useVeeamForm = () => {
       localAlerts,
     } = formData;
 
-    const initials = engineer
-      .split(" ")
-      .map((n) => n[0]?.toUpperCase())
-      .join("") || "XX";
+    const initials = (engineer || "")
+  .split(" ")
+  .map((n) => n[0]?.toUpperCase())
+  .join("") || "XX";
+
 
     const safeDate = new Date(date);
     const formattedDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
