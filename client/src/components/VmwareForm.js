@@ -206,7 +206,7 @@ export default function VmwareForm({ onBackToDashboard }) {
                 onClick={() => openEmailClient(row, key)}
                 className="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-3 py-1 rounded"
               >
-                📧 Create Email ({row.host})
+                📧 Email ({row.host})
               </button>
             ))}
         </div>

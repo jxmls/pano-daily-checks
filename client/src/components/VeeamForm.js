@@ -160,24 +160,34 @@ export default function VeeamForm({ onBackToDashboard }) {
         )}
       </div>
 
-      <div className="mt-10 flex flex-col items-center">
-        <button
-          onClick={onBackToDashboard}
-          className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded mb-4 self-start"
-        >
-          Back
-        </button>
+      <div className="mt-10">
+        <p className="text-red-600 text-sm flex items-center gap-2 text-center justify-center">
+          ⚠️ <span>Please ensure <strong>"Alert generated?"</strong> is answered for both <strong>Clarion Events</strong> and <strong>Local Veeam Backup</strong>. If you selected <strong>"Yes"</strong>, each selected row must include <strong>Type</strong>, <strong>VBR Host</strong>, <strong>Details</strong>, and <strong>Ticket</strong>.</span>
+        </p>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex justify-start w-full sm:w-auto">
+          <button
+            onClick={onBackToDashboard}
+            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+          >
+            Back
+          </button>
+        </div>
 
         {showSubmit && (
-          <button
-            onClick={() => {
-              handleFinalSubmit();
-              onBackToDashboard();
-            }}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-          >
-            Submit Checklist
-          </button>
+          <div className="flex justify-center w-full sm:justify-center sm:w-full">
+            <button
+              onClick={() => {
+                handleFinalSubmit();
+                onBackToDashboard();
+              }}
+              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+            >
+              Submit Checklist
+            </button>
+          </div>
         )}
       </div>
     </div>
