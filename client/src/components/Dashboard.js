@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 
 console.log("Dashboard loaded");
 
@@ -106,40 +106,20 @@ const modules = [
   },
 ];
 
-export default function Dashboard({ onSelectModule, onSignOut }) {
+export default function Dashboard({ onSelectModule }) {
   const engineerName = localStorage.getItem("engineerName") || "Engineer";
 
-  useEffect(() => {
-    const userTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    if (userTheme === "dark" || (!userTheme && systemPrefersDark)) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const isDark = document.documentElement.classList.toggle("dark");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 bg-gradient-to-b from-slate-100 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 relative">
-      {/* Dark mode toggle */}
-      <button
-        onClick={toggleDarkMode}
-        className="absolute top-4 right-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm px-3 py-1 rounded-md shadow hover:shadow-lg transition"
-        title="Toggle light/dark mode"
-      >
-        🌓 Toggle Theme
-      </button>
-
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 bg-gradient-to-b from-gray-100 via-white to-white text-gray-800">
       {/* Welcome Message */}
-      <h1 className="text-2xl font-bold text-center text-gray-700 dark:text-gray-100 mb-6 tracking-tight">
-        👋 Welcome to the <span className="text-blue-600 dark:text-blue-400">Infrastructure Hub</span>, {engineerName}!
+      <h1 className="text-2xl font-bold text-center text-gray-700 mb-2 tracking-tight">
+        👋 Welcome to the <span className="text-blue-600">Infrastructure Hub</span>, {engineerName}!
       </h1>
+
+      {/* Subtitle */}
+      <p className="text-sm text-gray-500 mb-6">
+        Select a module below to begin your daily checks.
+      </p>
 
       {/* Module Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full max-w-4xl mt-2">
@@ -147,20 +127,17 @@ export default function Dashboard({ onSelectModule, onSignOut }) {
           <button
             key={id}
             onClick={() => {
-              const fullName =
-                localStorage.getItem("engineerName") || "Unknown";
-              const today =
-                localStorage.getItem("checkDate") ||
-                new Date().toISOString().split("T")[0];
+              const fullName = localStorage.getItem("engineerName") || "Unknown";
+              const today = localStorage.getItem("checkDate") || new Date().toISOString().split("T")[0];
 
               localStorage.setItem("engineerName", fullName);
               localStorage.setItem("checkDate", today);
 
               onSelectModule(id);
             }}
-            className="w-24 h-24 sm:w-28 sm:h-28 bg-white dark:bg-gray-700 dark:text-white rounded-2xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 border border-gray-200 dark:border-gray-600 flex flex-col items-center justify-center text-sm font-medium text-gray-700 text-center p-2"
+            className="w-24 sm:w-28 md:w-32 h-24 sm:h-28 bg-white rounded-2xl shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 ease-in-out border border-gray-200 flex flex-col items-center justify-center text-sm font-semibold text-gray-700 text-center p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
-            <div className="mb-1">{icon}</div>
+            <div className="mb-1 flex items-center justify-center w-8 h-8">{icon}</div>
             {title}
           </button>
         ))}
