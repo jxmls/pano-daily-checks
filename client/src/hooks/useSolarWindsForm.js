@@ -120,7 +120,7 @@ export default function useSolarWindsForm() {
     if (!servicesRunning || !alertsGenerated) {
       setIsFormValid(false);
       setValidationMessage(
-        "⚠️ Please answer all “services running” and “alert generated” questions before submitting."
+        "Please answer all “services running” and “alert generated” questions before submitting."
       );
       return;
     }
@@ -138,7 +138,7 @@ export default function useSolarWindsForm() {
         ) {
           setIsFormValid(false);
           setValidationMessage(
-            "⚠️ Please complete all alert fields (Type, Alert Name, Details, Trigger Time, Ticket), and Notes if Ticket is N/A."
+            "Please complete all alert fields (Type, Alert Name, Details, Trigger Time, Ticket), and Notes if Ticket is N/A."
           );
           return;
         }
