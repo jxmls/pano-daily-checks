@@ -1,11 +1,10 @@
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Submission {
@@ -16,4 +15,48 @@ model Submission {
   solarAlert  Boolean
   vsanClient  String
   vsanAlert   Boolean
+}
+
+model CheckpointSubmission {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  engineer    String
+  section     String   // "Panoptics" or "The Brewery"
+  alertStatus String
+  details     String
+  reference   String
+
+  alerts      CheckpointAlert[] // 🔁 Reverse relation
+}
+
+model CheckpointAlert {
+  id              Int      @id @default(autoincrement())
+  checkpointId    Int
+  severity        String
+  name            String
+  machine         String
+  details         String
+  ticket          String
+  notes           String
+
+  checkpoint      CheckpointSubmission @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+}
+
+model VeeamSubmission {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  engineer    String
+  vbrHost     String
+  type        String   // "Warning" or "Failed"
+  details     String
+  ticket      String
+  notes       String
+}
+
+model VmwareSubmission {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  engineer    String
+  client      String
+  alert       Boolean
 }

@@ -34,12 +34,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
 
   const renderAlertTable = (alerts, org) => {
     const selectedRow = alerts.find(
-      (r) =>
-        r.selected &&
-        r.severity &&
-        r.name &&
-        r.machine &&
-        r.details
+      (r) => r.selected && r.severity && r.name && r.machine && r.details
     );
 
     return (
@@ -180,95 +175,64 @@ export default function CheckpointForm({ onBackToDashboard }) {
     );
   };
 
+  const renderSection = (title, org) => (
+    <div className="bg-white border rounded-lg shadow-sm p-6 mb-10">
+      <h2 className="text-xl font-bold mb-3">{title}</h2>
+      <label className="block font-medium mb-1">Alert generated?</label>
+      <div className="flex gap-4 mb-4">
+        <label>
+          <input
+            type="radio"
+            name={`${org}Alert`}
+            value="yes"
+            checked={formData[org].alertsGenerated === "yes"}
+            onChange={() => handleChange(org, "alertsGenerated", "yes")}
+          />{" "}
+          Yes
+        </label>
+        <label>
+          <input
+            type="radio"
+            name={`${org}Alert`}
+            value="no"
+            checked={formData[org].alertsGenerated === "no"}
+            onChange={() => handleChange(org, "alertsGenerated", "no")}
+          />{" "}
+          No
+        </label>
+      </div>
+
+      {formData[org].alertsGenerated === "yes" &&
+        renderAlertTable(formData[org].alerts, org)}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Checkpoint Checks</h1>
+<p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
+  This checklist is used to review and record any critical alerts detected within the Checkpoint Infinity Portal for both Panoptics Global Ltd and The Brewery.
+</p>
 
-      <p className="mb-4">This is a daily checklist to check and address any alerts flagged in:</p>
-      <ul className="list-disc ml-6 mb-4">
-        <li>Checkpoint Infinity Portal</li>
-      </ul>
-      <p className="mb-2">
-        URL:{" "}
-        <a
-          href="https://portal.checkpoint.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 underline"
-        >
-          https://portal.checkpoint.com
-        </a>
-      </p>
+      <div className="bg-gray-50 border rounded px-4 py-3 text-sm shadow-sm mb-6">
+  <p className="font-semibold mb-1">Checkpoint Infinity Portal</p>
+  <div className="flex items-center gap-2">
+    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">URL</span>
+    <a
+      href="https://portal.checkpoint.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline break-all"
+    >
+      https://portal.checkpoint.com
+    </a>
+  </div>
+</div>
 
-      {/* Panoptics Section */}
-      <h2 className="text-xl font-semibold mt-6">Panoptics Global Ltd</h2>
-      <div className="mt-4 mb-4">
-        <label className="block font-medium mb-1">Alert generated?</label>
-        <div className="flex gap-4">
-          <label>
-            <input
-              type="radio"
-              name="panopticsAlert"
-              value="yes"
-              checked={formData.panoptics.alertsGenerated === "yes"}
-              onChange={() =>
-                handleChange("panoptics", "alertsGenerated", "yes")
-              }
-            />{" "}
-            Yes
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="panopticsAlert"
-              value="no"
-              checked={formData.panoptics.alertsGenerated === "no"}
-              onChange={() =>
-                handleChange("panoptics", "alertsGenerated", "no")
-              }
-            />{" "}
-            No
-          </label>
-        </div>
-      </div>
-      {formData.panoptics.alertsGenerated === "yes" &&
-        renderAlertTable(formData.panoptics.alerts, "panoptics")}
 
-      {/* Brewery Section */}
-      <h2 className="text-xl font-semibold mt-10">The Brewery</h2>
-      <div className="mt-4 mb-4">
-        <label className="block font-medium mb-1">Alert generated?</label>
-        <div className="flex gap-4">
-          <label>
-            <input
-              type="radio"
-              name="breweryAlert"
-              value="yes"
-              checked={formData.brewery.alertsGenerated === "yes"}
-              onChange={() =>
-                handleChange("brewery", "alertsGenerated", "yes")
-              }
-            />{" "}
-            Yes
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="breweryAlert"
-              value="no"
-              checked={formData.brewery.alertsGenerated === "no"}
-              onChange={() =>
-                handleChange("brewery", "alertsGenerated", "no")
-              }
-            />{" "}
-            No
-          </label>
-        </div>
-      </div>
-      {formData.brewery.alertsGenerated === "yes" &&
-        renderAlertTable(formData.brewery.alerts, "brewery")}
+      {renderSection("Panoptics Global Ltd", "panoptics")}
+      {renderSection("The Brewery", "brewery")}
 
-      {/* Submit */}
       {isFormValid ? (
         <div className="flex justify-center mt-8">
           <button
@@ -284,7 +248,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
         </p>
       )}
 
-      <div className="fixed bottom-4 left-4">
+      <div className="mt-10">
         <button
           onClick={onBackToDashboard}
           className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"

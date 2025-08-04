@@ -8,16 +8,10 @@ export default function useCheckpointForm(onBackToDashboard) {
     engineer: "",
     date: "",
     panoptics: {
-      alertStatus: "",
-      details: "",
-      reference: "",
       alertsGenerated: "",
       alerts: [],
     },
     brewery: {
-      alertStatus: "",
-      details: "",
-      reference: "",
       alertsGenerated: "",
       alerts: [],
     },
@@ -119,7 +113,6 @@ export default function useCheckpointForm(onBackToDashboard) {
 
   // 🔒 Validation logic
   const isYes = (val) => val === "yes";
-  const isNo = (val) => val === "no";
 
   const isValidAlert = (a) =>
     a.severity?.trim() &&
@@ -132,14 +125,16 @@ export default function useCheckpointForm(onBackToDashboard) {
 
   if (!formData.panoptics.alertsGenerated || !formData.brewery.alertsGenerated) {
     isFormValid = false;
-    validationMessage = "Please select whether alerts were generated for both Panoptics and The Brewery.";
+    validationMessage =
+      "Please select whether alerts were generated for both Panoptics and The Brewery.";
   } else if (isYes(formData.panoptics.alertsGenerated)) {
     if (formData.panoptics.alerts.length === 0) {
       isFormValid = false;
       validationMessage = "Please add at least one alert row for Panoptics.";
     } else if (!formData.panoptics.alerts.every(isValidAlert)) {
       isFormValid = false;
-      validationMessage = " All Panoptics alert rows must have Severity, Name, Machine, and Details filled.";
+      validationMessage =
+        "All Panoptics alert rows must have Severity, Name, Machine, and Details filled.";
     }
   }
 
@@ -149,7 +144,8 @@ export default function useCheckpointForm(onBackToDashboard) {
       validationMessage = "Please add at least one alert row for The Brewery.";
     } else if (!formData.brewery.alerts.every(isValidAlert)) {
       isFormValid = false;
-      validationMessage = "All Brewery alert rows must have Severity, Name, Machine, and Details filled.";
+      validationMessage =
+        "All Brewery alert rows must have Severity, Name, Machine, and Details filled.";
     }
   }
 
@@ -196,19 +192,14 @@ ${formatAlerts(brewery.alerts)}
       : "unknown-date";
 
     const doc = new jsPDF();
-
     addHeader(doc, "Checkpoint Checklist", engineer, formattedDate);
 
-    const addSection = (title, data, startY) => {
+    const addSection = (title, alerts, startY) => {
       doc.setFontSize(12);
       doc.text(title, 14, startY);
-      doc.setFontSize(10);
-      doc.text(`Alert: ${data.alertStatus}`, 14, startY + 7);
-      doc.text(`Details: ${data.details}`, 14, startY + 14);
-      doc.text(`Reference: ${data.reference}`, 14, startY + 21);
 
-      if (data.alerts.length > 0) {
-        const alertRows = data.alerts.map((a, idx) => [
+      if (alerts.length > 0) {
+        const alertRows = alerts.map((a, idx) => [
           idx + 1,
           a.severity || "",
           a.name || "",
@@ -221,16 +212,20 @@ ${formatAlerts(brewery.alerts)}
         autoTable(doc, {
           head: [["#", "Severity", "Name", "Machine", "Details", "Ticket", "Notes"]],
           body: alertRows,
-          startY: startY + 28,
+          startY: startY + 8,
           styles: { fontSize: 9 },
         });
-      }
 
-      return doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : startY + 35;
+        return doc.lastAutoTable.finalY + 10;
+      } else {
+        doc.setFontSize(10);
+        doc.text("No alerts entered.", 14, startY + 8);
+        return startY + 16;
+      }
     };
 
-    let nextY = addSection("Panoptics Check Point", panoptics, 50);
-    addSection("The Brewery Check Point", brewery, nextY);
+    let nextY = addSection("Panoptics Check Point", panoptics.alerts, 50);
+    addSection("The Brewery Check Point", brewery.alerts, nextY);
 
     doc.save(`checkpoint-checklist-${initials}-${formattedDate}.pdf`);
   };
