@@ -5,6 +5,7 @@ import SolarWindsForm from "./components/SolarWindsForm";
 import VmwareForm from "./components/VmwareForm";
 import Header from "./components/Header";
 import CheckpointForm from "./components/CheckpointForm";
+import ProjectBoard from "./components/projectboard/ProjectBoard";
 import VeeamForm from "./components/VeeamForm"
 
 
@@ -68,7 +69,9 @@ export default function App() {
     date={userData.date}
     onBackToDashboard={() => setScreen("dashboard")}
   />
-) : null}
+) : screen === "projectboard" ? (
+          <ProjectBoard onBackToDashboard={() => setScreen("dashboard")} />
+        ) : null}
 
       </div>
     </div>

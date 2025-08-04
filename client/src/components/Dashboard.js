@@ -1,51 +1,33 @@
 import React from "react";
 
+// ✅ Import images explicitly
+import solarwindsLogo from "../assets/solarwinds-logo.png";
+import vmwareLogo from "../assets/vmware-logo.png";
+import veeamLogo from "../assets/veeam-logo.png";
+import checkpointLogo from "../assets/checkpoint-logo.png";
+
 console.log("Dashboard loaded");
 
 const modules = [
   {
     id: "solarwinds",
     title: "SolarWinds Checks",
-    icon: (
-      <img
-        src={require("../assets/solarwinds-logo.png")}
-        alt="SolarWinds Logo"
-        className="h-6"
-      />
-    ),
+    icon: <img src={solarwindsLogo} alt="SolarWinds Logo" className="h-6" />,
   },
   {
     id: "vsan",
     title: "Vmware vSAN Checks",
-    icon: (
-      <img
-        src={require("../assets/vmware-logo.png")}
-        alt="VMware Logo"
-        className="h-6 object-contain"
-      />
-    ),
+    icon: <img src={vmwareLogo} alt="VMware Logo" className="h-6 object-contain" />,
   },
   {
     id: "veeam",
     title: "Veeam Backup Checks",
-    icon: (
-      <img
-        src={require("../assets/veeam-logo.png")}
-        alt="Veeam Logo"
-        className="h-6 object-contain"
-      />
-    ),
+    icon: <img src={veeamLogo} alt="Veeam Logo" className="h-6 object-contain" />,
   },
   {
     id: "checkpoint",
     title: "Checkpoint Checks",
-    icon: (
-      <img
-        src={require("../assets/checkpoint-logo.png")}
-        alt="Checkpoint Logo"
-        className="h-6 object-contain"
-      />
-    ),
+    icon: <img src={checkpointLogo} alt="Checkpoint Logo" className="h-6 object-contain" />,
   },
   {
     id: "KnownIssues",
@@ -67,7 +49,7 @@ const modules = [
     ),
   },
   {
-    id: "Projects",
+    id: "projectboard",
     title: "Project Board",
     icon: (
       <svg
