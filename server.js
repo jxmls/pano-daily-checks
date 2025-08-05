@@ -1,16 +1,20 @@
 // server.js
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
 import submissionsRouter from './api/routes/submissions.js';
-app.use('/api/submissions', submissionsRouter);
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const { PrismaClient } = require("@prisma/client"); // ✅ ADDED
-const prisma = new PrismaClient();                  // ✅ ADDED
 
-const app = express();
+const app = express(); // ✅ declare first
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use('/api/submissions', submissionsRouter);
+
 const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
 
 // Middleware
