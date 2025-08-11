@@ -1,91 +1,401 @@
-// src/components/projectboard/ProjectBoard.js
-import React, { useState } from "react";
+// ============================
+// File: src/components/projectboard/ProjectBoard.js
+// ============================
+import React, { useEffect, useMemo, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-const initialData = {
-  "To Do": ["Task 1", "Task 2"],
-  "In Progress": ["Task 3"],
-  "Done": ["Task 4"],
+import BoardSection from "./BoardSection";
+import { Plus } from "lucide-react";
+
+const STORAGE_KEY = "pano.projectboard.v1";
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+// ---- Default seed
+const DEFAULT_COLUMNS = {
+  todo: {
+    id: "todo",
+    title: "To Do",
+    wipLimit: null,
+    tasks: [
+      { id: "t1", title: "Task 1", assignee: "", priority: "medium", due: "", tags: [] },
+      { id: "t2", title: "Task 2", assignee: "", priority: "low", due: "", tags: [] },
+    ],
+  },
+  inprogress: {
+    id: "inprogress",
+    title: "In Progress",
+    wipLimit: 3,
+    tasks: [{ id: "t3", title: "Task 3", assignee: "", priority: "high", due: "", tags: [] }],
+  },
+  done: {
+    id: "done",
+    title: "Done",
+    wipLimit: null,
+    tasks: [{ id: "t4", title: "Task 4", assignee: "", priority: "low", due: "", tags: ["done"] }],
+  },
 };
+const DEFAULT_ORDER = ["todo", "inprogress", "done"];
+
+function loadInitialState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.columns && parsed?.columnOrder) return parsed;
+    }
+  } catch {}
+  return { columns: DEFAULT_COLUMNS, columnOrder: DEFAULT_ORDER };
+}
 
 export default function ProjectBoard() {
-  const [columns, setColumns] = useState(initialData);
+  const [{ columns, columnOrder }, setState] = useState(() => loadInitialState());
 
-  const handleDragEnd = (result) => {
-    const { source, destination } = result;
+  // ---- Filters
+  const [filters, setFilters] = useState({ q: "", priority: "all", assignee: "", tag: "" });
+  const filtersActive = useMemo(
+    () =>
+      (filters.q && filters.q.trim() !== "") ||
+      (filters.priority && filters.priority !== "all") ||
+      (filters.assignee && filters.assignee.trim() !== "") ||
+      (filters.tag && filters.tag.trim() !== ""),
+    [filters]
+  );
 
+  const [notice, setNotice] = useState("");
+  const showNotice = (msg) => {
+    setNotice(msg);
+    window.clearTimeout(showNotice._t);
+    showNotice._t = window.setTimeout(() => setNotice(""), 2500);
+  };
+
+  const persist = (next) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+  };
+
+  // Persist initial load too (so key exists even before edits)
+  useEffect(() => {
+    persist({ columns, columnOrder });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- DnD
+  const handleDragEnd = ({ source, destination, type }) => {
     if (!destination) return;
 
-    const sourceColumn = source.droppableId;
-    const destColumn = destination.droppableId;
+    if (filtersActive) {
+      showNotice("Drag is disabled while filters are active.");
+      return;
+    }
 
-    const sourceItems = [...columns[sourceColumn]];
-    const destItems = [...columns[destColumn]];
+    if (type === "COLUMN") {
+      const nextOrder = Array.from(columnOrder);
+      const [moved] = nextOrder.splice(source.index, 1);
+      nextOrder.splice(destination.index, 0, moved);
+      const next = { columns, columnOrder: nextOrder };
+      setState(next);
+      persist(next);
+      return;
+    }
 
-    // Move within same column
-    if (sourceColumn === destColumn) {
-      const [movedItem] = sourceItems.splice(source.index, 1);
-      sourceItems.splice(destination.index, 0, movedItem);
-      setColumns({ ...columns, [sourceColumn]: sourceItems });
+    const srcId = source.droppableId;
+    const dstId = destination.droppableId;
+
+    if (srcId === dstId) {
+      const newTasks = [...columns[srcId].tasks];
+      const [moved] = newTasks.splice(source.index, 1);
+      newTasks.splice(destination.index, 0, moved);
+      const next = {
+        columns: { ...columns, [srcId]: { ...columns[srcId], tasks: newTasks } },
+        columnOrder,
+      };
+      setState(next);
+      persist(next);
     } else {
-      const [movedItem] = sourceItems.splice(source.index, 1);
-      destItems.splice(destination.index, 0, movedItem);
-      setColumns({
-        ...columns,
-        [sourceColumn]: sourceItems,
-        [destColumn]: destItems,
-      });
+      // WIP enforcement
+      const destLimit = columns[dstId].wipLimit;
+      const destCount = columns[dstId].tasks.length;
+      if (destLimit && destCount >= destLimit) {
+        showNotice(`WIP limit reached for "${columns[dstId].title}"`);
+        return;
+      }
+
+      const sourceTasks = [...columns[srcId].tasks];
+      const destTasks = [...columns[dstId].tasks];
+      const [moved] = sourceTasks.splice(source.index, 1);
+      destTasks.splice(destination.index, 0, moved);
+      const next = {
+        columns: {
+          ...columns,
+          [srcId]: { ...columns[srcId], tasks: sourceTasks },
+          [dstId]: { ...columns[dstId], tasks: destTasks },
+        },
+        columnOrder,
+      };
+      setState(next);
+      persist(next);
     }
   };
 
-  const handleAddTask = (columnName) => {
-    const newTask = prompt("Enter task name:");
-    if (newTask) {
-      setColumns({
-        ...columns,
-        [columnName]: [...columns[columnName], newTask],
-      });
-    }
+  // ---- Column actions
+  const handleAddColumnInline = (title) => {
+    const name = title.trim();
+    if (!name) return;
+    const id = uid();
+    const next = {
+      columns: { ...columns, [id]: { id, title: name, wipLimit: null, tasks: [] } },
+      columnOrder: [...columnOrder, id],
+    };
+    setState(next);
+    persist(next);
   };
+
+  const handleRenameColumn = (columnId, newTitle) => {
+    const title = newTitle.trim();
+    if (!title) return;
+    const next = {
+      columns: { ...columns, [columnId]: { ...columns[columnId], title } },
+      columnOrder,
+    };
+    setState(next);
+    persist(next);
+  };
+
+  const handleDeleteColumn = (columnId) => {
+    const { [columnId]: _omit, ...rest } = columns;
+    const next = { columns: rest, columnOrder: columnOrder.filter((id) => id !== columnId) };
+    setState(next);
+    persist(next);
+  };
+
+  const handleSetWip = (columnId, limitValue) => {
+    const val = limitValue === "" ? null : Math.max(0, Number(limitValue) || 0);
+    const wipLimit = val === 0 ? null : val;
+    const next = {
+      columns: { ...columns, [columnId]: { ...columns[columnId], wipLimit } },
+      columnOrder,
+    };
+    setState(next);
+    persist(next);
+  };
+
+  // ---- Task actions
+  const handleAddTaskInline = (columnId, title) => {
+    const t = title.trim();
+    if (!t) return;
+    const col = columns[columnId];
+    if (col.wipLimit && col.tasks.length >= col.wipLimit) {
+      showNotice(`WIP limit reached for "${col.title}"`);
+      return;
+    }
+    const task = { id: uid(), title: t, assignee: "", priority: "medium", due: "", tags: [] };
+    const next = {
+      columns: { ...columns, [columnId]: { ...col, tasks: [...col.tasks, task] } },
+      columnOrder,
+    };
+    setState(next);
+    persist(next);
+  };
+
+  const handleDeleteTask = (columnId, taskId) => {
+    const col = columns[columnId];
+    const next = {
+      columns: { ...columns, [columnId]: { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) } },
+      columnOrder,
+    };
+    setState(next);
+    persist(next);
+  };
+
+  const handleUpdateTask = (columnId, taskId, patch) => {
+    const col = columns[columnId];
+    const nextTasks = col.tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t));
+    const next = { columns: { ...columns, [columnId]: { ...col, tasks: nextTasks } }, columnOrder };
+    setState(next);
+    persist(next);
+  };
+
+  // Move from modal (“Move to In Progress”)
+  const handleMoveTask = (sourceColumnId, taskId, destColumnId) => {
+    if (sourceColumnId === destColumnId) return;
+
+    const src = columns[sourceColumnId];
+    const dst = columns[destColumnId];
+    if (!src || !dst) return;
+
+    // WIP enforcement
+    if (dst.wipLimit && dst.tasks.length >= dst.wipLimit) {
+      showNotice(`WIP limit reached for "${dst.title}"`);
+      return;
+    }
+
+    const sourceTasks = [...src.tasks];
+    const idx = sourceTasks.findIndex((t) => t.id === taskId);
+    if (idx === -1) return;
+
+    const [moved] = sourceTasks.splice(idx, 1);
+    const destTasks = [moved, ...dst.tasks]; // prepend at top
+
+    const next = {
+      columns: {
+        ...columns,
+        [sourceColumnId]: { ...src, tasks: sourceTasks },
+        [destColumnId]: { ...dst, tasks: destTasks },
+      },
+      columnOrder,
+    };
+    setState(next);
+    persist(next);
+  };
+
+  // ---- Filtering
+  const matchesFilters = (task) => {
+    const q = filters.q.trim().toLowerCase();
+    if (q) {
+      const inTitle = task.title.toLowerCase().includes(q);
+      const inTags = (task.tags || []).some((tg) => tg.toLowerCase().includes(q));
+      if (!inTitle && !inTags) return false;
+    }
+    if (filters.priority !== "all" && task.priority !== filters.priority) return false;
+    if (filters.assignee && !String(task.assignee || "").toLowerCase().includes(filters.assignee.toLowerCase()))
+      return false;
+    if (filters.tag && !(task.tags || []).map((t) => t.toLowerCase()).includes(filters.tag.toLowerCase()))
+      return false;
+    return true;
+  };
+
+  // ---- UI
+  const [addingCol, setAddingCol] = useState(false);
+  const [newColTitle, setNewColTitle] = useState("");
 
   return (
-    <div className="flex space-x-4 p-4">
-      <DragDropContext onDragEnd={handleDragEnd}>
-        {Object.entries(columns).map(([columnName, tasks], index) => (
-          <Droppable droppableId={columnName} key={columnName}>
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="w-1/3 bg-gray-100 rounded p-3 shadow-md"
+    <div className="p-4 overflow-x-auto">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xl font-semibold">Project Board</h2>
+        <div className="flex items-center gap-2">
+          {/* Filters */}
+          <input
+            className="border rounded px-2 py-1 text-sm"
+            placeholder="Search title or tags…"
+            value={filters.q}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+          />
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={filters.priority}
+            onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
+          >
+            <option value="all">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <input
+            className="border rounded px-2 py-1 text-sm"
+            placeholder="Assignee"
+            value={filters.assignee}
+            onChange={(e) => setFilters((f) => ({ ...f, assignee: e.target.value }))}
+          />
+          <input
+            className="border rounded px-2 py-1 text-sm"
+            placeholder="Tag"
+            value={filters.tag}
+            onChange={(e) => setFilters((f) => ({ ...f, tag: e.target.value }))}
+          />
+          <button
+            onClick={() => setFilters({ q: "", priority: "all", assignee: "", tag: "" })}
+            className="text-sm underline"
+          >
+            Clear
+          </button>
+
+          {!addingCol ? (
+            <button
+              onClick={() => setAddingCol(true)}
+              className="inline-flex items-center gap-1 text-sm text-blue-700 hover:underline"
+            >
+              <Plus size={16} /> Add column
+            </button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <input
+                className="border rounded px-2 py-1 text-sm"
+                placeholder="New column title"
+                value={newColTitle}
+                onChange={(e) => setNewColTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddColumnInline(newColTitle);
+                    setNewColTitle("");
+                    setAddingCol(false);
+                  } else if (e.key === "Escape") {
+                    setAddingCol(false);
+                    setNewColTitle("");
+                  }
+                }}
+                autoFocus
+              />
+              <button
+                className="text-sm px-2 py-1 border rounded"
+                onClick={() => {
+                  handleAddColumnInline(newColTitle);
+                  setNewColTitle("");
+                  setAddingCol(false);
+                }}
               >
-                <h3 className="font-bold text-white bg-blue-600 px-3 py-2 rounded mb-3">
-                  {columnName}
-                </h3>
-                {tasks.map((task, idx) => (
-                  <Draggable key={task} draggableId={task} index={idx}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className="bg-white p-2 mb-2 rounded shadow text-sm"
-                      >
-                        {task}
+                Add
+              </button>
+              <button className="text-sm underline" onClick={() => { setAddingCol(false); setNewColTitle(""); }}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {notice && (
+        <div className="mb-3 text-sm rounded bg-yellow-50 border border-yellow-200 text-yellow-900 px-3 py-2">
+          {notice}
+        </div>
+      )}
+
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="board" direction="horizontal" type="COLUMN">
+          {(provided) => (
+            <div ref={provided.innerRef} {...provided.droppableProps} className="flex gap-4">
+              {columnOrder.map((colId, index) => {
+                const col = columns[colId];
+                if (!col) return null;
+                const visibleTasks = col.tasks.filter((t) => matchesFilters(t));
+                return (
+                  <Draggable key={col.id} draggableId={col.id} index={index}>
+                    {(dragProvided) => (
+                      <div ref={dragProvided.innerRef} {...dragProvided.draggableProps}>
+                        <BoardSection
+                          id={col.id}
+                          title={col.title}
+                          wipLimit={col.wipLimit}
+                          totalCount={col.tasks.length}
+                          tasks={visibleTasks}
+                          filtersActive={filtersActive}
+                          dragHandleProps={dragProvided.dragHandleProps}
+                          onAddTask={(title) => handleAddTaskInline(col.id, title)}
+                          onDeleteTask={(taskId) => handleDeleteTask(col.id, taskId)}
+                          onUpdateTask={(taskId, patch) => handleUpdateTask(col.id, taskId, patch)}
+                          onRenameColumn={(newTitle) => handleRenameColumn(col.id, newTitle)}
+                          onDeleteColumn={() => handleDeleteColumn(col.id)}
+                          onSetWip={(limit) => handleSetWip(col.id, limit)}
+                          onMoveTask={(taskId, destId) => handleMoveTask(col.id, taskId, destId)}
+                        />
                       </div>
                     )}
                   </Draggable>
-                ))}
-                {provided.placeholder}
-                <button
-                  onClick={() => handleAddTask(columnName)}
-                  className="text-blue-700 text-sm mt-2"
-                >
-                  + Add
-                </button>
-              </div>
-            )}
-          </Droppable>
-        ))}
+                );
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </DragDropContext>
     </div>
   );
