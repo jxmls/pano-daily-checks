@@ -107,6 +107,8 @@ function TaskCardInner({
         className={`group relative select-none bg-white rounded-xl p-3 text-sm shadow-sm hover:shadow-md transition border ${
           isDragging ? "border-blue-300" : "border-transparent"
         } before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:rounded-l-xl ${accent}`}
+        // perf + smoother drag
+        style={{ willChange: "transform", contain: "paint", touchAction: "manipulation" }}
       >
         <div className="flex items-start justify-between gap-2">
           {/* small grip = true drag handle (prevents click-vs-drag conflict) */}
@@ -116,7 +118,6 @@ function TaskCardInner({
             title="Drag card"
             className="p-1 rounded hover:bg-gray-100 cursor-grab active:cursor-grabbing shrink-0"
             aria-label="Drag card"
-            style={{ touchAction: "manipulation" }}
           >
             <GripVertical size={16} />
           </span>

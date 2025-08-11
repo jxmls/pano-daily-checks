@@ -1,7 +1,7 @@
 // ============================
 // File: src/components/projectboard/ProjectBoard.js
 // ============================
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import BoardSection from "./BoardSection";
 import { Plus } from "lucide-react";
@@ -46,8 +46,22 @@ function loadInitialState() {
   return { columns: DEFAULT_COLUMNS, columnOrder: DEFAULT_ORDER };
 }
 
+const MemoBoardSection = React.memo(BoardSection);
+
 export default function ProjectBoard() {
-  const [{ columns, columnOrder }, setState] = useState(() => loadInitialState());
+  const [state, setState] = useState(() => loadInitialState());
+  const { columns, columnOrder } = state;
+
+  // Centralized updater that also persists
+  const updateState = useCallback((producer) => {
+    setState((prev) => {
+      const next = typeof producer === "function" ? producer(prev) : producer;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   // ---- Filters
   const [filters, setFilters] = useState({ q: "", priority: "all", assignee: "", tag: "" });
@@ -61,208 +75,234 @@ export default function ProjectBoard() {
   );
 
   const [notice, setNotice] = useState("");
-  const showNotice = (msg) => {
+  const showNotice = useCallback((msg) => {
     setNotice(msg);
     window.clearTimeout(showNotice._t);
     showNotice._t = window.setTimeout(() => setNotice(""), 2500);
-  };
-
-  const persist = (next) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {}
-  };
+  }, []);
 
   // Persist initial load too (so key exists even before edits)
   useEffect(() => {
-    persist({ columns, columnOrder });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---- DnD
-  const handleDragEnd = ({ source, destination, type }) => {
-    if (!destination) return;
+  const handleDragEnd = useCallback(
+    ({ source, destination, type }) => {
+      if (!destination) return;
 
-    if (filtersActive) {
-      showNotice("Drag is disabled while filters are active.");
-      return;
-    }
-
-    if (type === "COLUMN") {
-      const nextOrder = Array.from(columnOrder);
-      const [moved] = nextOrder.splice(source.index, 1);
-      nextOrder.splice(destination.index, 0, moved);
-      const next = { columns, columnOrder: nextOrder };
-      setState(next);
-      persist(next);
-      return;
-    }
-
-    const srcId = source.droppableId;
-    const dstId = destination.droppableId;
-
-    if (srcId === dstId) {
-      const newTasks = [...columns[srcId].tasks];
-      const [moved] = newTasks.splice(source.index, 1);
-      newTasks.splice(destination.index, 0, moved);
-      const next = {
-        columns: { ...columns, [srcId]: { ...columns[srcId], tasks: newTasks } },
-        columnOrder,
-      };
-      setState(next);
-      persist(next);
-    } else {
-      // WIP enforcement
-      const destLimit = columns[dstId].wipLimit;
-      const destCount = columns[dstId].tasks.length;
-      if (destLimit && destCount >= destLimit) {
-        showNotice(`WIP limit reached for "${columns[dstId].title}"`);
+      if (filtersActive) {
+        showNotice("Drag is disabled while filters are active.");
         return;
       }
 
-      const sourceTasks = [...columns[srcId].tasks];
-      const destTasks = [...columns[dstId].tasks];
-      const [moved] = sourceTasks.splice(source.index, 1);
-      destTasks.splice(destination.index, 0, moved);
-      const next = {
-        columns: {
-          ...columns,
-          [srcId]: { ...columns[srcId], tasks: sourceTasks },
-          [dstId]: { ...columns[dstId], tasks: destTasks },
-        },
-        columnOrder,
-      };
-      setState(next);
-      persist(next);
-    }
-  };
+      if (type === "COLUMN") {
+        updateState((prev) => {
+          const nextOrder = Array.from(prev.columnOrder);
+          const [moved] = nextOrder.splice(source.index, 1);
+          nextOrder.splice(destination.index, 0, moved);
+          return { ...prev, columnOrder: nextOrder };
+        });
+        return;
+      }
+
+      const srcId = source.droppableId;
+      const dstId = destination.droppableId;
+
+      if (srcId === dstId) {
+        updateState((prev) => {
+          const newTasks = [...prev.columns[srcId].tasks];
+          const [moved] = newTasks.splice(source.index, 1);
+          newTasks.splice(destination.index, 0, moved);
+          return {
+            ...prev,
+            columns: { ...prev.columns, [srcId]: { ...prev.columns[srcId], tasks: newTasks } },
+          };
+        });
+      } else {
+        updateState((prev) => {
+          const destLimit = prev.columns[dstId].wipLimit;
+          const destCount = prev.columns[dstId].tasks.length;
+          if (destLimit && destCount >= destLimit) {
+            showNotice(`WIP limit reached for "${prev.columns[dstId].title}"`);
+            return prev;
+          }
+
+          const sourceTasks = [...prev.columns[srcId].tasks];
+          const destTasks = [...prev.columns[dstId].tasks];
+          const [moved] = sourceTasks.splice(source.index, 1);
+          destTasks.splice(destination.index, 0, moved);
+
+          return {
+            ...prev,
+            columns: {
+              ...prev.columns,
+              [srcId]: { ...prev.columns[srcId], tasks: sourceTasks },
+              [dstId]: { ...prev.columns[dstId], tasks: destTasks },
+            },
+          };
+        });
+      }
+    },
+    [filtersActive, showNotice, updateState]
+  );
 
   // ---- Column actions
-  const handleAddColumnInline = (title) => {
-    const name = title.trim();
-    if (!name) return;
-    const id = uid();
-    const next = {
-      columns: { ...columns, [id]: { id, title: name, wipLimit: null, tasks: [] } },
-      columnOrder: [...columnOrder, id],
-    };
-    setState(next);
-    persist(next);
-  };
+  const handleAddColumnInline = useCallback(
+    (title) => {
+      const name = (title || "").trim();
+      if (!name) return;
+      const id = uid();
+      updateState((prev) => ({
+        ...prev,
+        columns: { ...prev.columns, [id]: { id, title: name, wipLimit: null, tasks: [] } },
+        columnOrder: [...prev.columnOrder, id],
+      }));
+    },
+    [updateState]
+  );
 
-  const handleRenameColumn = (columnId, newTitle) => {
-    const title = newTitle.trim();
-    if (!title) return;
-    const next = {
-      columns: { ...columns, [columnId]: { ...columns[columnId], title } },
-      columnOrder,
-    };
-    setState(next);
-    persist(next);
-  };
+  const handleRenameColumn = useCallback(
+    (columnId, newTitle) => {
+      const title = (newTitle || "").trim();
+      if (!title) return;
+      updateState((prev) => ({
+        ...prev,
+        columns: { ...prev.columns, [columnId]: { ...prev.columns[columnId], title } },
+      }));
+    },
+    [updateState]
+  );
 
-  const handleDeleteColumn = (columnId) => {
-    const { [columnId]: _omit, ...rest } = columns;
-    const next = { columns: rest, columnOrder: columnOrder.filter((id) => id !== columnId) };
-    setState(next);
-    persist(next);
-  };
+  const handleDeleteColumn = useCallback(
+    (columnId) => {
+      updateState((prev) => {
+        const { [columnId]: _omit, ...restCols } = prev.columns;
+        return {
+          ...prev,
+          columns: restCols,
+          columnOrder: prev.columnOrder.filter((id) => id !== columnId),
+        };
+      });
+    },
+    [updateState]
+  );
 
-  const handleSetWip = (columnId, limitValue) => {
-    const val = limitValue === "" ? null : Math.max(0, Number(limitValue) || 0);
-    const wipLimit = val === 0 ? null : val;
-    const next = {
-      columns: { ...columns, [columnId]: { ...columns[columnId], wipLimit } },
-      columnOrder,
-    };
-    setState(next);
-    persist(next);
-  };
+  const handleSetWip = useCallback(
+    (columnId, limitValue) => {
+      const val = limitValue === "" ? null : Math.max(0, Number(limitValue) || 0);
+      const wipLimit = val === 0 ? null : val;
+      updateState((prev) => ({
+        ...prev,
+        columns: { ...prev.columns, [columnId]: { ...prev.columns[columnId], wipLimit } },
+      }));
+    },
+    [updateState]
+  );
 
   // ---- Task actions
-  const handleAddTaskInline = (columnId, title) => {
-    const t = title.trim();
-    if (!t) return;
-    const col = columns[columnId];
-    if (col.wipLimit && col.tasks.length >= col.wipLimit) {
-      showNotice(`WIP limit reached for "${col.title}"`);
-      return;
-    }
-    const task = { id: uid(), title: t, assignee: "", priority: "medium", due: "", tags: [] };
-    const next = {
-      columns: { ...columns, [columnId]: { ...col, tasks: [...col.tasks, task] } },
-      columnOrder,
-    };
-    setState(next);
-    persist(next);
-  };
+  const handleAddTaskInline = useCallback(
+    (columnId, title) => {
+      const t = (title || "").trim();
+      if (!t) return;
+      updateState((prev) => {
+        const col = prev.columns[columnId];
+        if (col.wipLimit && col.tasks.length >= col.wipLimit) {
+          showNotice(`WIP limit reached for "${col.title}"`);
+          return prev;
+        }
+        const task = { id: uid(), title: t, assignee: "", priority: "medium", due: "", tags: [] };
+        return {
+          ...prev,
+          columns: { ...prev.columns, [columnId]: { ...col, tasks: [...col.tasks, task] } },
+        };
+      });
+    },
+    [showNotice, updateState]
+  );
 
-  const handleDeleteTask = (columnId, taskId) => {
-    const col = columns[columnId];
-    const next = {
-      columns: { ...columns, [columnId]: { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) } },
-      columnOrder,
-    };
-    setState(next);
-    persist(next);
-  };
+  const handleDeleteTask = useCallback(
+    (columnId, taskId) => {
+      updateState((prev) => {
+        const col = prev.columns[columnId];
+        return {
+          ...prev,
+          columns: {
+            ...prev.columns,
+            [columnId]: { ...col, tasks: col.tasks.filter((t) => t.id !== taskId) },
+          },
+        };
+      });
+    },
+    [updateState]
+  );
 
-  const handleUpdateTask = (columnId, taskId, patch) => {
-    const col = columns[columnId];
-    const nextTasks = col.tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t));
-    const next = { columns: { ...columns, [columnId]: { ...col, tasks: nextTasks } }, columnOrder };
-    setState(next);
-    persist(next);
-  };
+  const handleUpdateTask = useCallback(
+    (columnId, taskId, patch) => {
+      updateState((prev) => {
+        const col = prev.columns[columnId];
+        const nextTasks = col.tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t));
+        return { ...prev, columns: { ...prev.columns, [columnId]: { ...col, tasks: nextTasks } } };
+      });
+    },
+    [updateState]
+  );
 
   // Move from modal (“Move to In Progress”)
-  const handleMoveTask = (sourceColumnId, taskId, destColumnId) => {
-    if (sourceColumnId === destColumnId) return;
+  const handleMoveTask = useCallback(
+    (sourceColumnId, taskId, destColumnId) => {
+      if (sourceColumnId === destColumnId) return;
+      updateState((prev) => {
+        const src = prev.columns[sourceColumnId];
+        const dst = prev.columns[destColumnId];
+        if (!src || !dst) return prev;
 
-    const src = columns[sourceColumnId];
-    const dst = columns[destColumnId];
-    if (!src || !dst) return;
+        if (dst.wipLimit && dst.tasks.length >= dst.wipLimit) {
+          showNotice(`WIP limit reached for "${dst.title}"`);
+          return prev;
+        }
 
-    // WIP enforcement
-    if (dst.wipLimit && dst.tasks.length >= dst.wipLimit) {
-      showNotice(`WIP limit reached for "${dst.title}"`);
-      return;
-    }
+        const sourceTasks = [...src.tasks];
+        const idx = sourceTasks.findIndex((t) => t.id === taskId);
+        if (idx === -1) return prev;
 
-    const sourceTasks = [...src.tasks];
-    const idx = sourceTasks.findIndex((t) => t.id === taskId);
-    if (idx === -1) return;
+        const [moved] = sourceTasks.splice(idx, 1);
+        const destTasks = [moved, ...dst.tasks]; // prepend at top
 
-    const [moved] = sourceTasks.splice(idx, 1);
-    const destTasks = [moved, ...dst.tasks]; // prepend at top
-
-    const next = {
-      columns: {
-        ...columns,
-        [sourceColumnId]: { ...src, tasks: sourceTasks },
-        [destColumnId]: { ...dst, tasks: destTasks },
-      },
-      columnOrder,
-    };
-    setState(next);
-    persist(next);
-  };
+        return {
+          ...prev,
+          columns: {
+            ...prev.columns,
+            [sourceColumnId]: { ...src, tasks: sourceTasks },
+            [destColumnId]: { ...dst, tasks: destTasks },
+          },
+        };
+      });
+    },
+    [showNotice, updateState]
+  );
 
   // ---- Filtering
-  const matchesFilters = (task) => {
-    const q = filters.q.trim().toLowerCase();
-    if (q) {
-      const inTitle = task.title.toLowerCase().includes(q);
-      const inTags = (task.tags || []).some((tg) => tg.toLowerCase().includes(q));
-      if (!inTitle && !inTags) return false;
-    }
-    if (filters.priority !== "all" && task.priority !== filters.priority) return false;
-    if (filters.assignee && !String(task.assignee || "").toLowerCase().includes(filters.assignee.toLowerCase()))
-      return false;
-    if (filters.tag && !(task.tags || []).map((t) => t.toLowerCase()).includes(filters.tag.toLowerCase()))
-      return false;
-    return true;
-  };
+  const matchesFilters = useCallback(
+    (task) => {
+      const q = filters.q.trim().toLowerCase();
+      if (q) {
+        const inTitle = task.title.toLowerCase().includes(q);
+        const inTags = (task.tags || []).some((tg) => tg.toLowerCase().includes(q));
+        if (!inTitle && !inTags) return false;
+      }
+      if (filters.priority !== "all" && task.priority !== filters.priority) return false;
+      if (filters.assignee && !String(task.assignee || "").toLowerCase().includes(filters.assignee.toLowerCase()))
+        return false;
+      if (filters.tag && !(task.tags || []).map((t) => t.toLowerCase()).includes(filters.tag.toLowerCase()))
+        return false;
+      return true;
+    },
+    [filters]
+  );
 
   // ---- UI
   const [addingCol, setAddingCol] = useState(false);
@@ -370,8 +410,15 @@ export default function ProjectBoard() {
                 return (
                   <Draggable key={col.id} draggableId={col.id} index={index}>
                     {(dragProvided) => (
-                      <div ref={dragProvided.innerRef} {...dragProvided.draggableProps}>
-                        <BoardSection
+                      <div
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        style={{
+                          ...(dragProvided.draggableProps.style || {}),
+                          willChange: "transform", // GPU hint for column
+                        }}
+                      >
+                        <MemoBoardSection
                           id={col.id}
                           title={col.title}
                           wipLimit={col.wipLimit}
