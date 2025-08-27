@@ -6,8 +6,8 @@ import VmwareForm from "./components/VmwareForm";
 import Header from "./components/Header";
 import CheckpointForm from "./components/CheckpointForm";
 import ProjectBoard from "./components/projectboard/ProjectBoard";
-import VeeamForm from "./components/VeeamForm"
-
+import VeeamForm from "./components/VeeamForm";
+import KnownIssuesCatalog from "./components/KnownIssuesCatalog";
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -26,7 +26,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black">
-
       <Header
         showHome={authenticated && screen !== "dashboard"}
         showSignOut={authenticated && screen === "dashboard"}
@@ -56,23 +55,23 @@ export default function App() {
             date={userData.date}
             onBackToDashboard={() => setScreen("dashboard")}
           />
-          ) : screen === "checkpoint" ? (
-  <CheckpointForm
-    engineer={userData.engineer}
-    date={userData.date}
-    onBackToDashboard={() => setScreen("dashboard")}
-  />
-
+        ) : screen === "checkpoint" ? (
+          <CheckpointForm
+            engineer={userData.engineer}
+            date={userData.date}
+            onBackToDashboard={() => setScreen("dashboard")}
+          />
         ) : screen === "veeam" ? (
-  <VeeamForm
-    engineer={userData.engineer}
-    date={userData.date}
-    onBackToDashboard={() => setScreen("dashboard")}
-  />
-) : screen === "projectboard" ? (
+          <VeeamForm
+            engineer={userData.engineer}
+            date={userData.date}
+            onBackToDashboard={() => setScreen("dashboard")}
+          />
+        ) : screen === "projectboard" ? (
           <ProjectBoard onBackToDashboard={() => setScreen("dashboard")} />
+        ) : screen === "KnownIssues" ? (
+          <KnownIssuesCatalog onBackToDashboard={() => setScreen("dashboard")} />
         ) : null}
-
       </div>
     </div>
   );

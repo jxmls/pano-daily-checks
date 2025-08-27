@@ -4,7 +4,13 @@
 import React, { useState } from "react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard";
-import { GripHorizontal, Pencil, Trash2 } from "lucide-react";
+import { GripHorizontal, Pencil, Trash2, Plus } from "lucide-react";
+import ReactDOM from "react-dom";
+
+const DragPortal = ({ children }) => ReactDOM.createPortal(children, document.body);
+const DropIndicator = () => (
+  <div className="h-2 my-1 rounded border-2 border-dashed border-blue-400 bg-blue-200/40" />
+);
 
 export default function BoardSection({
   id,
@@ -21,6 +27,10 @@ export default function BoardSection({
   onSetWip,        // (limit: string | number)
   onMoveTask,      // (taskId: string, destId: string)
   dragHandleProps, // from column Draggable
+  tagHues,         // { tag: hue }
+  dropDisabled = false,
+  overLimit = false, // just for pulsing style
+  hoverIndex = -1,   // precise insert index from parent
 }) {
   const [draft, setDraft] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
@@ -92,7 +102,12 @@ export default function BoardSection({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="text-xs bg-blue-500/60 rounded px-2 py-0.5">
+          <div
+            className={`text-xs rounded px-2 py-0.5 ${
+              overLimit ? "bg-red-500/70 animate-pulse ring-2 ring-red-300" : "bg-blue-500/60"
+            }`}
+            title="Work-in-progress"
+          >
             WIP {totalCount}{wipLimit ? `/${wipLimit}` : ""}
           </div>
 
@@ -146,63 +161,90 @@ export default function BoardSection({
       </div>
 
       {/* Tasks */}
-      <Droppable droppableId={id} type="TASK" isDropDisabled={false}>
+      <Droppable droppableId={id} type="TASK" isDropDisabled={dropDisabled}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={`p-3 min-h-[140px] space-y-2 rounded-b-2xl ${
               snapshot.isDraggingOver ? "bg-blue-50" : "bg-gray-50"
-            }`}
+            } overflow-visible`}
           >
+            {/* indicator at very top */}
+            {hoverIndex === 0 && <DropIndicator />}
+
             {tasks.map((task, index) => (
-              <Draggable
-                key={task.id}
-                draggableId={task.id}
-                index={index}
-                isDragDisabled={filtersActive}
-              >
-                {(dragProvided, dragSnapshot) => (
-                  <div
-                    ref={dragProvided.innerRef}
-                    {...dragProvided.draggableProps}
-                    // perf hint: helps the browser prep a GPU layer for smoother dragging
-                    style={{
-                      ...(dragProvided.draggableProps.style || {}),
-                      willChange: "transform",
-                    }}
-                  >
-                    <TaskCard
-                      task={task}
-                      onDelete={() => onDeleteTask(task.id)}
-                      onUpdate={(patch) => onUpdateTask(task.id, patch)}
-                      isDragging={dragSnapshot.isDragging}
-                      isDoneColumn={id === "done"}
-                      isInProgressColumn={id === "inprogress"}
-                      isTodoColumn={id === "todo"}
-                      onMoveToInProgress={() => onMoveTask?.(task.id, "inprogress")}
-                      // pass the dedicated handle to the small grip inside the card
-                      dragHandleProps={dragProvided.dragHandleProps}
-                    />
-                  </div>
-                )}
-              </Draggable>
+              <React.Fragment key={task.id}>
+                {/* indicator before this item */}
+                {hoverIndex === index && <DropIndicator />}
+
+                <Draggable draggableId={task.id} index={index}>
+                  {(dragProvided, dragSnapshot) => {
+                    const card = (
+                      <div
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        className={dragSnapshot.isDragging ? "ring-2 ring-blue-400 rounded-xl" : ""}
+                        style={{
+                          ...(dragProvided.draggableProps.style || {}),
+                          zIndex: dragSnapshot.isDragging ? 2000 : undefined,
+                          position: dragSnapshot.isDragging ? "relative" : undefined,
+                          opacity: dragSnapshot.isDragging ? 0.92 : 1,
+                          boxShadow: dragSnapshot.isDragging
+                            ? "0 10px 30px rgba(0,0,0,0.20), 0 6px 12px rgba(0,0,0,0.15)"
+                            : undefined,
+                          cursor: dragSnapshot.isDragging ? "grabbing" : "grab",
+                        }}
+                      >
+                        <TaskCard
+                          task={task}
+                          columnId={id}
+                          onDelete={() => onDeleteTask(task.id)}
+                          onUpdate={(patch) => onUpdateTask(task.id, patch)}
+                          // for the modal quick action:
+                          isDoneColumn={id === "done"}
+                          isInProgressColumn={id === "inprogress"}
+                          isTodoColumn={id === "todo"}
+                          onMoveToInProgress={() => onMoveTask(task.id, "inprogress")}
+                          tagHues={tagHues}
+                          filtersActive={filtersActive}
+                        />
+                      </div>
+                    );
+                    return dragSnapshot.isDragging ? <DragPortal>{card}</DragPortal> : card;
+                  }}
+                </Draggable>
+              </React.Fragment>
             ))}
+
+            {/* indicator at very bottom */}
+            {hoverIndex === tasks.length && <DropIndicator />}
+
             {provided.placeholder}
 
             {/* Inline Add */}
             <div className="pt-2">
-              <input
-                className="w-full border rounded px-2 py-1 text-sm"
-                placeholder="Add a task and press Enter…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAddInline();
-                  if (e.key === "Escape") setDraft("");
-                }}
-                aria-label="Add task"
-              />
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <Plus size={14} />
+                </span>
+                <input
+                  className="w-full h-9 pl-7 pr-12 bg-white/90 border border-slate-200 rounded-xl text-sm placeholder-gray-400
+                             focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-300 shadow-sm"
+                  placeholder="Add a task…"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddInline();
+                    if (e.key === "Escape") setDraft("");
+                  }}
+                  aria-label="Add task"
+                />
+                <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 border border-gray-300 rounded px-1 py-0.5 bg-white/70">
+                  Enter
+                </kbd>
+              </div>
             </div>
           </div>
         )}

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import ReactDOM from "react-dom";
 import { Pencil, Trash2, CalendarDays, CheckSquare, GripVertical } from "lucide-react";
 import CardModal from "./CardModal";
 
@@ -16,16 +17,12 @@ function hueFromString(s) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
   return h;
 }
-function labelStyle(label) {
-  const h = hueFromString(label.toLowerCase());
-  return { backgroundColor: `hsl(${h} 70% 92%)`, color: `hsl(${h} 30% 28%)` };
-}
 function parseISODate(d) {
   if (!d) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
   if (!m) return null;
   const y = Number(m[1]);
-  const mo = Number(m[2]) - 1; // 0-based
+  const mo = Number(m[2]) - 1;
   const da = Number(m[3]);
   return new Date(Date.UTC(y, mo, da));
 }
@@ -56,6 +53,8 @@ function TaskCardInner({
   onMoveToInProgress = () => {},
   // drag handle for the small grip only:
   dragHandleProps = {},
+  // tag hue map from ProjectBoard settings
+  tagHues = {},
 }) {
   const safe = {
     id: task?.id ?? "",
@@ -65,6 +64,12 @@ function TaskCardInner({
     due: task?.due ?? "",
     tags: Array.isArray(task?.tags) ? task.tags : [],
     checklist: Array.isArray(task?.checklist) ? task.checklist : [],
+  };
+
+  const tagStyle = (tg) => {
+    const hasHue = tagHues && Number.isFinite(tagHues[tg]);
+    const h = hasHue ? tagHues[tg] : hueFromString(tg.toLowerCase());
+    return { backgroundColor: `hsl(${h} 70% 92%)`, color: `hsl(${h} 30% 28%)` };
   };
 
   const { done, total, pct, ds, priorityBadge, accent, dueBadge } = useMemo(() => {
@@ -107,8 +112,6 @@ function TaskCardInner({
         className={`group relative select-none bg-white rounded-xl p-3 text-sm shadow-sm hover:shadow-md transition border ${
           isDragging ? "border-blue-300" : "border-transparent"
         } before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:rounded-l-xl ${accent}`}
-        // perf + smoother drag
-        style={{ willChange: "transform", contain: "paint", touchAction: "manipulation" }}
       >
         <div className="flex items-start justify-between gap-2">
           {/* small grip = true drag handle (prevents click-vs-drag conflict) */}
@@ -118,11 +121,12 @@ function TaskCardInner({
             title="Drag card"
             className="p-1 rounded hover:bg-gray-100 cursor-grab active:cursor-grabbing shrink-0"
             aria-label="Drag card"
+            style={{ touchAction: "manipulation" }}
           >
             <GripVertical size={16} />
           </span>
 
-          {/* clickable body (no drag props here) */}
+          {/* clickable body */}
           <button
             type="button"
             className="flex items-start gap-3 flex-1 min-w-0 text-left"
@@ -151,7 +155,7 @@ function TaskCardInner({
                   </span>
                 )}
                 {(safe.tags || []).slice(0, 3).map((tg) => (
-                  <span key={tg} className="px-2 py-0.5 rounded" style={labelStyle(tg)}>
+                  <span key={tg} className="px-2 py-0.5 rounded" style={tagStyle(tg)}>
                     #{tg}
                   </span>
                 ))}
@@ -177,7 +181,7 @@ function TaskCardInner({
             </div>
           </button>
 
-          {/* actions (don’t steal pointer events from drag) */}
+          {/* actions */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
             <button title="Edit" onClick={() => setOpen(true)} className="p-1 rounded hover:bg-gray-100">
               <Pencil size={16} />
@@ -189,18 +193,22 @@ function TaskCardInner({
         </div>
       </div>
 
-      {/* Modal */}
-      <CardModal
-        open={open}
-        onClose={() => setOpen(false)}
-        task={task}
-        onUpdate={(patch) => onUpdate?.(patch)}
-        onDelete={onDelete}
-        isDoneColumn={isDoneColumn}
-        isInProgressColumn={isInProgressColumn}
-        isTodoColumn={isTodoColumn}
-        onMoveToInProgress={onMoveToInProgress}
-      />
+      {/* Modal via PORTAL to body so it centers & isn't clipped */}
+      {open &&
+        ReactDOM.createPortal(
+          <CardModal
+            open
+            onClose={() => setOpen(false)}
+            task={task}
+            onUpdate={(patch) => onUpdate?.(patch)}
+            onDelete={onDelete}
+            isDoneColumn={isDoneColumn}
+            isInProgressColumn={isInProgressColumn}
+            isTodoColumn={isTodoColumn}
+            onMoveToInProgress={onMoveToInProgress}
+          />,
+          document.body
+        )}
     </>
   );
 }
@@ -213,8 +221,7 @@ function areEqual(prev, next) {
   if (prev.isDoneColumn !== next.isDoneColumn) return false;
   if (prev.isInProgressColumn !== next.isInProgressColumn) return false;
   if (prev.isTodoColumn !== next.isTodoColumn) return false;
-
-  // shallow compare main fields (fast & good enough)
+  if (prev.tagHues !== next.tagHues) return false;
   if (a.id !== b.id) return false;
   if (a.title !== b.title) return false;
   if (a.assignee !== b.assignee) return false;
