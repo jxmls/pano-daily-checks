@@ -1,5 +1,8 @@
 import React, { useEffect } from "react";
 import useVeeamForm from "../hooks/useVeeamForm";
+import { saveSubmission } from "../utils/SaveSubmission";
+
+
 
 export default function VeeamForm({ onBackToDashboard }) {
   const {
@@ -213,17 +216,32 @@ export default function VeeamForm({ onBackToDashboard }) {
           Back
         </button>
 
-        {showSubmit && (
-          <button
-            onClick={() => {
-              handleFinalSubmit();
-              onBackToDashboard();
-            }}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-          >
-            Submit Checklist
-          </button>
-        )}
+      {showSubmit && (
+  <button
+    onClick={() => {
+      const pdf = handleFinalSubmit(); // pdf is { dataUrl, filename } or undefined
+
+      const passed =
+        (formData.alertsGenerated === "no" || isSubmissionReady()) &&
+        (formData.localAlertsGenerated === "no" || isLocalSubmissionReady());
+
+      saveSubmission({
+        module: "veeam",
+        engineer: formData.engineer || localStorage.getItem("engineerName") || "Unknown",
+        passed,
+        meta: { clients: ["Clarion", "Local"], notes: "Submitted from VeeamForm" },
+        payload: formData,
+        pdf: pdf ? { name: pdf.filename, dataUrl: pdf.dataUrl } : undefined, // 👈 attach PDF
+      });
+
+      onBackToDashboard();
+    }}
+    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+  >
+    Submit Checklist
+  </button>
+)}
+
       </div>
     </div>
   );

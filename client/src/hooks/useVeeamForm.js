@@ -127,97 +127,112 @@ const useVeeamForm = () => {
     setValidationMessage("");
   };
 
-  const handleSubmit = () => {
-    const {
-      engineer,
-      date,
-      alertsGenerated,
-      alerts,
-      localAlertsGenerated,
-      localAlerts,
-    } = formData;
+  // --- replace handleSubmit with this ---
+const handleSubmit = () => {
+  const {
+    engineer,
+    date,
+    alertsGenerated,
+    alerts,
+    localAlertsGenerated,
+    localAlerts,
+  } = formData;
 
-    const initials = (engineer || "")
-  .split(" ")
-  .map((n) => n[0]?.toUpperCase())
-  .join("") || "XX";
+  const initials =
+    (engineer || "")
+      .split(" ")
+      .map((n) => n[0]?.toUpperCase())
+      .join("") || "XX";
 
+  const safeDate = new Date(date);
+  const formattedDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
 
-    const safeDate = new Date(date);
-    const formattedDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
+  const doc = new jsPDF();
+  addHeader(doc, "Veeam Backup Checklist", engineer, date);
 
-    const doc = new jsPDF();
-    addHeader(doc, "Veeam Backup Checklist", engineer, date);
+  let y = 50;
 
-    let y = 50;
+  // Clarion Events Section
+  doc.setFontSize(11);
+  doc.text("Clarion Events Veeam Backup", 14, y);
+  y += 7;
+  doc.text("Use Clarion RDS or UK1-PAN01 to RDP into:", 14, y);
+  y += 7;
+  doc.text("CT - US2-VEEAM01 | TUL - US1-VEEAM01 | SG - SG-VEEAM01 | UK - UK1-VEEAM365", 14, y);
+  y += 10;
+  doc.text(`Alerts Generated: ${alertsGenerated || "N/A"}`, 14, y);
+  y += 5;
 
-    // Clarion Events Section
-    doc.setFontSize(11);
-    doc.text("Clarion Events Veeam Backup", 14, y);
-    y += 7;
-    doc.text("Use Clarion RDS or UK1-PAN01 to RDP into:", 14, y);
-    y += 7;
-    doc.text("CT - US2-VEEAM01 | TUL - US1-VEEAM01 | SG - SG-VEEAM01 | UK - UK1-VEEAM365", 14, y);
-    y += 10;
-    doc.text(`Alerts Generated: ${alertsGenerated || "N/A"}`, 14, y);
-    y += 5;
+  if (alertsGenerated === "yes" && alerts.length > 0) {
+    const rows = alerts.map((a, i) => [
+      i + 1,
+      a.type,
+      a.vbrHost,
+      a.details,
+      a.ticket,
+      a.notes || "-",
+    ]);
 
-    if (alertsGenerated === "yes" && alerts.length > 0) {
-      const rows = alerts.map((a, i) => [
-        i + 1,
-        a.type,
-        a.vbrHost,
-        a.details,
-        a.ticket,
-        a.notes || "-",
-      ]);
+    autoTable(doc, {
+      head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+      body: rows,
+      startY: y + 5,
+      styles: { fontSize: 9 },
+    });
 
-      autoTable(doc, {
-        head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
-        body: rows,
-        startY: y + 5,
-        styles: { fontSize: 9 },
-      });
+    y = doc.lastAutoTable.finalY + 10;
+  }
 
-      y = doc.lastAutoTable.finalY + 10;
-    }
+  // Local Veeam Backup
+  doc.text("Local Veeam Backup", 14, y);
+  y += 7;
+  doc.text("https://192.168.69.219:1280/", 14, y);
+  y += 7;
+  doc.text("Sign In with your ADM account.", 14, y);
+  y += 7;
+  doc.text("Go to Management > Backup Jobs. Check both Virtual Machines and M365 tabs.", 14, y);
+  y += 7;
+  doc.text(`Alerts Generated: ${localAlertsGenerated || "N/A"}`, 14, y);
+  y += 5;
 
-    // Local Veeam Backup Section
-    doc.text("Local Veeam Backup", 14, y);
-    y += 7;
-    doc.text("https://192.168.69.219:1280/", 14, y);
-    y += 7;
-    doc.text("Sign In with your ADM account.", 14, y);
-    y += 7;
-    doc.text("Go to Management > Backup Jobs. Check both Virtual Machines and M365 tabs.", 14, y);
-    y += 7;
-    doc.text(`Alerts Generated: ${localAlertsGenerated || "N/A"}`, 14, y);
-    y += 5;
+  if (localAlertsGenerated === "yes" && localAlerts.length > 0) {
+    const rows = localAlerts.map((a, i) => [
+      i + 1,
+      a.type,
+      a.vbrHost,
+      a.details,
+      a.ticket,
+      a.notes || "-",
+    ]);
 
-    if (localAlertsGenerated === "yes" && localAlerts.length > 0) {
-      const rows = localAlerts.map((a, i) => [
-        i + 1,
-        a.type,
-        a.vbrHost,
-        a.details,
-        a.ticket,
-        a.notes || "-",
-      ]);
+    autoTable(doc, {
+      head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+      body: rows,
+      startY: y + 5,
+      styles: { fontSize: 9 },
+    });
+  }
 
-      autoTable(doc, {
-        head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
-        body: rows,
-        startY: y + 5,
-        styles: { fontSize: 9 },
-      });
-    }
+  const filename = `veeam-checklist-${initials}-${formattedDate}.pdf`;
 
-    doc.save(`veeam-checklist-${initials}-${formattedDate}.pdf`);
-  };
+  // 👉 get a Data URL so Admin Portal can embed it
+  const dataUrl = doc.output("datauristring");
 
-  const handleFinalSubmit = () => {
-    if (isFormValid) handleSubmit();
-  };
+  // still download for the user
+  doc.save(filename);
+
+  // return info so the form can store it with the submission
+  return { dataUrl, filename };
+};
+
+// --- replace handleFinalSubmit with this ---
+const handleFinalSubmit = () => {
+  if (isFormValid) {
+    return handleSubmit(); // returns { dataUrl, filename }
+  }
+  return undefined;
+};
+
 
   const isSubmissionReady = () => {
     const alerts = formData.alerts || [];

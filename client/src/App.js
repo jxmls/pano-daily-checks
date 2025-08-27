@@ -8,6 +8,8 @@ import CheckpointForm from "./components/CheckpointForm";
 import ProjectBoard from "./components/projectboard/ProjectBoard";
 import VeeamForm from "./components/VeeamForm";
 import KnownIssuesCatalog from "./components/KnownIssuesCatalog";
+import AdminPortal from "./components/AdminPortal";
+
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -71,6 +73,9 @@ export default function App() {
           <ProjectBoard onBackToDashboard={() => setScreen("dashboard")} />
         ) : screen === "KnownIssues" ? (
           <KnownIssuesCatalog onBackToDashboard={() => setScreen("dashboard")} />
+          ) : screen === "admin" ? (
+  <AdminPortal onBackToDashboard={() => setScreen("dashboard")} />
+
         ) : null}
       </div>
     </div>

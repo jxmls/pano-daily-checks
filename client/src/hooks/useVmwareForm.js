@@ -1,237 +1,266 @@
-// useVmwareForm.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
 
-const defaultVmwareRow = {
-  alertType: "",
-  host: "",
+const defaultRow = {
+  type: "",
+  vbrHost: "",
   details: "",
   ticket: "",
   notes: "",
   selected: false,
 };
 
-export default function useVmwareForm() {
+const useVeeamForm = () => {
   const [formData, setFormData] = useState({
-    engineer: "",
-    date: "",
-    vsan: {
-      alerts: {}, // key: { alert: "", rows: [], selectAll: false }
-    },
+    engineer: localStorage.getItem("engineerName") || "",
+    date: localStorage.getItem("checkDate") || "",
+    alertsGenerated: "",
+    alerts: [],
+    selectAll: false,
+
+    localAlertsGenerated: "",
+    localAlerts: [],
+    selectAllLocal: false,
   });
 
-  const handleChange = (section, path, value) => {
-    setFormData((prevData) => {
-      const updated = { ...prevData };
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [validationMessage, setValidationMessage] = useState("");
 
-      if (!section) {
-        updated[path] = value;
-        return updated;
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // -------- Clarion rows
+  const handleAlertChange = (index, field, value) => {
+    const updated = [...formData.alerts];
+    updated[index][field] = value;
+    setFormData((prev) => ({ ...prev, alerts: updated }));
+  };
+
+  const addAlertRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      alerts: [...prev.alerts, { ...defaultRow }],
+    }));
+  };
+
+  const toggleRowSelection = (index) => {
+    const updated = [...formData.alerts];
+    updated[index].selected = !updated[index].selected;
+    setFormData((prev) => ({ ...prev, alerts: updated }));
+  };
+
+  const deleteSelectedRows = () => {
+    const updated = formData.alerts.filter((row) => !row.selected);
+    setFormData((prev) => ({ ...prev, alerts: updated, selectAll: false }));
+  };
+
+  const toggleSelectAll = () => {
+    const allSelected = !formData.selectAll;
+    const updated = formData.alerts.map((r) => ({ ...r, selected: allSelected }));
+    setFormData((prev) => ({ ...prev, alerts: updated, selectAll: allSelected }));
+  };
+
+  // -------- Local rows
+  const handleLocalAlertChange = (index, field, value) => {
+    const updated = [...formData.localAlerts];
+    updated[index][field] = value;
+    setFormData((prev) => ({ ...prev, localAlerts: updated }));
+  };
+
+  const addLocalAlertRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      localAlerts: [...prev.localAlerts, { ...defaultRow }],
+    }));
+  };
+
+  const toggleLocalRowSelection = (index) => {
+    const updated = [...formData.localAlerts];
+    updated[index].selected = !updated[index].selected;
+    setFormData((prev) => ({ ...prev, localAlerts: updated }));
+  };
+
+  const deleteSelectedLocalRows = () => {
+    const updated = formData.localAlerts.filter((row) => !row.selected);
+    setFormData((prev) => ({ ...prev, localAlerts: updated, selectAllLocal: false }));
+  };
+
+  const toggleSelectAllLocal = () => {
+    const allSelected = !formData.selectAllLocal;
+    const updated = formData.localAlerts.map((r) => ({ ...r, selected: allSelected }));
+    setFormData((prev) => ({ ...prev, localAlerts: updated, selectAllLocal: allSelected }));
+  };
+
+  // -------- Validation
+  const validateForm = () => {
+    const { alertsGenerated, alerts, localAlertsGenerated, localAlerts } = formData;
+
+    if (!alertsGenerated || !localAlertsGenerated) {
+      setIsFormValid(false);
+      setValidationMessage("Please answer both Clarion and Local 'Alert generated?' questions.");
+      return;
+    }
+
+    if (alertsGenerated === "yes") {
+      for (let a of alerts) {
+        if (!a.type || !a.vbrHost || !a.details) {
+          setIsFormValid(false);
+          setValidationMessage("Complete all Clarion alert fields (Type, VBR Host, Details).");
+          return;
+        }
       }
+    }
 
-      if (!updated[section]) updated[section] = {};
-      const keys = path.split(".");
-      let temp = updated[section];
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!temp[keys[i]]) temp[keys[i]] = {};
-        temp = temp[keys[i]];
+    if (localAlertsGenerated === "yes") {
+      for (let a of localAlerts) {
+        if (!a.type || !a.vbrHost || !a.details) {
+          setIsFormValid(false);
+          setValidationMessage("Complete all Local alert fields (Type, VBR Host, Details).");
+          return;
+        }
       }
-      temp[keys[keys.length - 1]] = value;
-      return updated;
-    });
+    }
+
+    setIsFormValid(true);
+    setValidationMessage("");
   };
 
-  const handleAlertChange = (section, key, index, field, value) => {
-    setFormData((prev) => {
-      const currentRows = prev?.[section]?.alerts?.[key]?.rows || [];
-      const updatedRows = [...currentRows];
-      updatedRows[index] = { ...updatedRows[index], [field]: value };
+  // -------- Helpers for “email body”
+  function buildVeeamEmailBody(fd) {
+    const p = fd || {};
+    const lines = [];
+    const safeDate = p.date || new Date().toISOString().slice(0, 10);
 
-      return {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          alerts: {
-            ...prev[section].alerts,
-            [key]: {
-              ...(prev[section].alerts[key] || {}),
-              rows: updatedRows,
-            },
-          },
-        },
-      };
-    });
-  };
+    lines.push("Veeam Backup Checklist");
+    lines.push(`Engineer: ${p.engineer || "Unknown"}`);
+    lines.push(`Date: ${safeDate}`);
+    lines.push("");
 
-  const addAlertRow = (section, key) => {
-    setFormData((prev) => {
-      const currentRows = prev?.[section]?.alerts?.[key]?.rows || [];
-      const updatedRows = [...currentRows, { ...defaultVmwareRow }];
+    lines.push("— Clarion Events —");
+    lines.push(`Alerts generated: ${p.alertsGenerated || "N/A"}`);
+    if (p.alertsGenerated === "yes" && Array.isArray(p.alerts) && p.alerts.length) {
+      p.alerts.forEach((a, i) => {
+        lines.push(
+          `#${i + 1} • ${a.type || "Type"} | Host: ${a.vbrHost || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
+        );
+      });
+    } else {
+      lines.push("No alerts.");
+    }
+    lines.push("");
 
-      return {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          alerts: {
-            ...prev[section].alerts,
-            [key]: {
-              ...(prev[section].alerts[key] || {}),
-              rows: updatedRows,
-              selectAll: false,
-            },
-          },
-        },
-      };
-    });
-  };
+    lines.push("— Local Veeam —");
+    lines.push(`Alerts generated: ${p.localAlertsGenerated || "N/A"}`);
+    if (p.localAlertsGenerated === "yes" && Array.isArray(p.localAlerts) && p.localAlerts.length) {
+      p.localAlerts.forEach((a, i) => {
+        lines.push(
+          `#${i + 1} • ${a.type || "Type"} | Host: ${a.vbrHost || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
+        );
+      });
+    } else {
+      lines.push("No alerts.");
+    }
 
-  const toggleRowSelection = (section, key, index) => {
-    setFormData((prev) => {
-      const currentRows = prev?.[section]?.alerts?.[key]?.rows || [];
-      if (!currentRows[index]) return prev;
+    lines.push("");
+    lines.push("— Meta —");
+    lines.push("This message was generated from the daily checks app.");
+    return lines.join("\n");
+  }
 
-      const updatedRows = [...currentRows];
-      updatedRows[index] = {
-        ...updatedRows[index],
-        selected: !updatedRows[index].selected,
-      };
-
-      return {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          alerts: {
-            ...prev[section].alerts,
-            [key]: {
-              ...(prev[section].alerts[key] || {}),
-              rows: updatedRows,
-            },
-          },
-        },
-      };
-    });
-  };
-
-  const deleteSelectedRows = (section, key) => {
-    setFormData((prev) => {
-      const currentRows = prev?.[section]?.alerts?.[key]?.rows || [];
-      const remainingRows = currentRows.filter((r) => !r.selected);
-
-      return {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          alerts: {
-            ...prev[section].alerts,
-            [key]: {
-              ...(prev[section].alerts[key] || {}),
-              rows: remainingRows,
-              selectAll: false,
-            },
-          },
-        },
-      };
-    });
-  };
-
-  const toggleSelectAll = (section, key) => {
-    setFormData((prev) => {
-      const current = prev?.[section]?.alerts?.[key] || { rows: [], selectAll: false };
-      const newSelectAll = !current.selectAll;
-      const updatedRows = (current.rows || []).map((row) => ({
-        ...row,
-        selected: newSelectAll,
-      }));
-
-      return {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          alerts: {
-            ...prev[section].alerts,
-            [key]: {
-              ...current,
-              rows: updatedRows,
-              selectAll: newSelectAll,
-            },
-          },
-        },
-      };
-    });
-  };
-
+  // -------- PDF + Email (no download)
   const handleSubmit = () => {
-    const engineer = formData.engineer?.trim() || "unknown";
-    const initials =
-      engineer
-        .split(" ")
-        .map((part) => part[0]?.toUpperCase())
-        .join("") || "XX";
+    const {
+      engineer = localStorage.getItem("engineerName") || "Unknown",
+      date = localStorage.getItem("checkDate") || new Date().toISOString(),
+      alertsGenerated,
+      alerts = [],
+      localAlertsGenerated,
+      localAlerts = [],
+    } = formData;
 
-    const dateObj = new Date(formData.date);
-    const date = !isNaN(dateObj) ? dateObj.toISOString().split("T")[0] : "unknown-date";
-
-    const fileName = `vsan-checklist-${initials}-${date}.pdf`;
     const doc = new jsPDF();
-
-    addHeader(doc, "vSAN Daily Checklist", engineer, date);
-
+    addHeader(doc, "Veeam Backup Checklist", engineer, date);
     let y = 50;
-    const alerts = formData.vsan?.alerts || {};
 
-    Object.entries(alerts).forEach(([key, section]) => {
-      doc.setFont(undefined, "bold");
-      doc.text(`Client: ${key}`, 14, y);
-      y += 7;
-      doc.setFont(undefined, "normal");
+    doc.setFontSize(11);
+    doc.text(`Engineer: ${engineer}`, 14, y); y += 6;
+    doc.text(`Date: ${date}`, 14, y); y += 10;
 
-      doc.text(`Alert Generated: ${section.alert || "no"}`, 14, y);
-      y += 7;
+    // Clarion
+    doc.text("Clarion Events", 14, y); y += 6;
+    doc.text(`Alerts generated: ${alertsGenerated || "N/A"}`, 14, y); y += 4;
+    if (alertsGenerated === "yes" && alerts.length) {
+      autoTable(doc, {
+        head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+        body: alerts.map((a, i) => [i + 1, a.type, a.vbrHost, a.details, a.ticket || "-", a.notes || "-"]),
+        startY: y + 2,
+        styles: { fontSize: 9 },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    } else {
+      doc.text("No alerts.", 14, y); y += 8;
+    }
 
-      if (section.alert === "yes" && Array.isArray(section.rows) && section.rows.length > 0) {
-        const tableRows = section.rows.map((row, index) => [
-          index + 1,
-          row.alertType || "-",
-          row.host || "-",
-          row.details || "-",
-          row.ticket || "-",
-          row.notes || "-",
-        ]);
+    // Local
+    doc.text("Local Veeam", 14, y); y += 6;
+    doc.text(`Alerts generated: ${localAlertsGenerated || "N/A"}`, 14, y); y += 4;
+    if (localAlertsGenerated === "yes" && localAlerts.length) {
+      autoTable(doc, {
+        head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+        body: localAlerts.map((a, i) => [i + 1, a.type, a.vbrHost, a.details, a.ticket || "-", a.notes || "-"]),
+        startY: y + 2,
+        styles: { fontSize: 9 },
+      });
+    } else {
+      doc.text("No alerts.", 14, y);
+    }
 
-        autoTable(doc, {
-          startY: y + 2,
-          head: [["#", "Type", "Host", "Details", "Ticket", "Notes"]],
-          body: tableRows,
-          styles: {
-            fontSize: 9,
-            cellPadding: 3,
-          },
-          headStyles: {
-            fillColor: [40, 116, 166],
-            textColor: 255,
-            halign: "center",
-          },
-          margin: { left: 14, right: 14 },
-        });
+    const initials = (engineer || "XX").split(" ").map((n) => n[0]?.toUpperCase()).join("") || "XX";
+    const safeDate = new Date(date);
+    const fnDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
+    const filename = `veeam-checklist-${initials}-${fnDate}.pdf`;
 
-        y = doc.lastAutoTable.finalY + 10;
-      } else {
-        y += 8;
-      }
+    // Do NOT download — keep for Admin Portal
+    const dataUrl = doc.output("datauristring");
 
-      if (y > 260) {
-        doc.addPage();
-        y = 20;
-      }
-    });
+    // Open email client with plaintext summary
+    const subject = `Veeam Daily Checklist - ${fnDate} - ${engineer}`;
+    const body = buildVeeamEmailBody({ ...formData, engineer, date: fnDate });
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-    doc.save(fileName);
+    // Return so caller can store pdf in Admin Portal if desired
+    return { dataUrl, filename };
   };
 
-  const generateTicketSubject = (alert) =>
-    encodeURIComponent(`vSAN Alert - ${alert.host || "Unknown Host"}`);
+  const handleFinalSubmit = () => {
+    if (isFormValid) return handleSubmit();
+    return undefined;
+  };
+
+  const isSubmissionReady = () => {
+    const alerts = formData.alerts || [];
+    return (
+      formData.alertsGenerated === "yes" &&
+      alerts.length > 0 &&
+      alerts.every((a) => a.type && a.vbrHost && a.details)
+    );
+  };
+
+  const isLocalSubmissionReady = () => {
+    const alerts = formData.localAlerts || [];
+    return (
+      formData.localAlertsGenerated === "yes" &&
+      alerts.length > 0 &&
+      alerts.every((a) => a.type && a.vbrHost && a.details)
+    );
+  };
 
   return {
     formData,
@@ -241,7 +270,17 @@ export default function useVmwareForm() {
     toggleRowSelection,
     deleteSelectedRows,
     toggleSelectAll,
-    handleSubmit,
-    generateTicketSubject,
+    handleFinalSubmit,
+    handleLocalAlertChange,
+    addLocalAlertRow,
+    toggleLocalRowSelection,
+    deleteSelectedLocalRows,
+    toggleSelectAllLocal,
+    isFormValid,
+    validationMessage,
+    isSubmissionReady,
+    isLocalSubmissionReady,
   };
-}
+};
+
+export default useVeeamForm;

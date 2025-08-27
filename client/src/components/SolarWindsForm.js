@@ -1,6 +1,7 @@
-//solarwindsform.js
+// src/components/SolarWindsForm.js
 import React, { useEffect } from "react";
 import useSolarWindsForm from "../hooks/useSolarWindsForm";
+import { saveSubmission } from "../utils/SaveSubmission";
 
 export default function SolarWindsForm({ onBackToDashboard }) {
   const {
@@ -11,33 +12,52 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     deleteSelectedRows,
     toggleRowSelection,
     toggleSelectAll,
-    handleFinalSubmit,
+    handleFinalSubmit, // now returns { dataUrl, filename } when valid
     isFormValid,
     validationMessage,
+    selectAll,
   } = useSolarWindsForm();
 
-  const handleFinalSubmitAndReturn = () => {
-    handleFinalSubmit();
-    onBackToDashboard();
-  };
-
+  // set engineer/date on root (top-level)
   useEffect(() => {
     const storedEngineer = localStorage.getItem("engineerName") || "";
     const storedDate = localStorage.getItem("checkDate") || "";
-    handleChange("solarwinds", "engineer", storedEngineer);
-    handleChange("solarwinds", "date", storedDate);
+    handleChange("root", "engineer", storedEngineer);
+    handleChange("root", "date", storedDate);
   }, []);
+
+  const handleFinalSubmitAndReturn = async () => {
+    const pdf = handleFinalSubmit(); // { dataUrl, filename } | undefined
+
+    // Decide module-level pass/fail for this submission:
+    // Pass when servicesRunning === "yes" and alertsGenerated === "no"
+    const passed =
+      (formData?.solarwinds?.servicesRunning || "").toLowerCase() === "yes" &&
+      (formData?.solarwinds?.alertsGenerated || "").toLowerCase() === "no";
+
+    // Persist for Admin Portal
+    saveSubmission({
+      module: "solarwinds",
+      engineer:
+        formData.engineer || localStorage.getItem("engineerName") || "Unknown",
+      passed,
+      meta: {
+        clients: [formData?.solarwinds?.client || "Multiple"],
+        notes: "Submitted from SolarWindsForm",
+      },
+      payload: formData,
+      pdf: pdf ? { name: pdf.filename, dataUrl: pdf.dataUrl } : undefined,
+    });
+
+    onBackToDashboard();
+  };
 
   const renderAlertTable = () => (
     <table className="min-w-full border text-sm shadow-sm rounded overflow-hidden mt-4">
       <thead className="bg-gray-100 text-gray-700">
         <tr>
           <th className="border px-3 py-2 text-center">
-            <input
-              type="checkbox"
-              checked={formData.selectAll}
-              onChange={toggleSelectAll}
-            />
+            <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} />
           </th>
           <th className="border px-3 py-2">Type</th>
           <th className="border px-3 py-2">Alert Name</th>
@@ -48,16 +68,12 @@ export default function SolarWindsForm({ onBackToDashboard }) {
         </tr>
       </thead>
       <tbody>
-        {formData.solarwinds.alerts.map((row, index) => (
+        {(formData.solarwinds.alerts || []).map((row, index) => (
           <tr
             key={index}
             onClick={() => toggleRowSelection(index)}
             className={`cursor-pointer min-h-[48px] ${
-              row.selected
-                ? "bg-blue-100"
-                : index % 2 === 0
-                ? "bg-white"
-                : "bg-gray-50"
+              row.selected ? "bg-blue-100" : index % 2 === 0 ? "bg-white" : "bg-gray-50"
             }`}
           >
             <td className="border px-3 py-2 text-center align-middle">
@@ -73,9 +89,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
             <td className="border px-3 py-2 align-middle">
               <select
                 value={row.alertType || ""}
-                onChange={(e) =>
-                  handleAlertChange(index, "alertType", e.target.value)
-                }
+                onChange={(e) => handleAlertChange(index, "alertType", e.target.value)}
                 className="min-w-[120px] border border-gray-300 rounded px-2 py-[0.375rem] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select</option>
@@ -88,45 +102,35 @@ export default function SolarWindsForm({ onBackToDashboard }) {
             <td className="border px-3 py-2 align-middle">
               <input
                 value={row.name || ""}
-                onChange={(e) =>
-                  handleAlertChange(index, "name", e.target.value)
-                }
+                onChange={(e) => handleAlertChange(index, "name", e.target.value)}
                 className="w-full border rounded px-2 py-[0.375rem]"
               />
             </td>
             <td className="border px-3 py-2 align-middle">
               <input
                 value={row.details || ""}
-                onChange={(e) =>
-                  handleAlertChange(index, "details", e.target.value)
-                }
+                onChange={(e) => handleAlertChange(index, "details", e.target.value)}
                 className="w-full border rounded px-2 py-[0.375rem]"
               />
             </td>
             <td className="border px-3 py-2 align-middle">
               <input
                 value={row.time || ""}
-                onChange={(e) =>
-                  handleAlertChange(index, "time", e.target.value)
-                }
+                onChange={(e) => handleAlertChange(index, "time", e.target.value)}
                 className="w-full border rounded px-2 py-[0.375rem]"
               />
             </td>
             <td className="border px-3 py-2 align-middle">
               <input
                 value={row.ticket || ""}
-                onChange={(e) =>
-                  handleAlertChange(index, "ticket", e.target.value)
-                }
+                onChange={(e) => handleAlertChange(index, "ticket", e.target.value)}
                 className="w-full border rounded px-2 py-[0.375rem]"
               />
             </td>
             <td className="border px-3 py-2 align-middle">
               <input
                 value={row.notes || ""}
-                onChange={(e) =>
-                  handleAlertChange(index, "notes", e.target.value)
-                }
+                onChange={(e) => handleAlertChange(index, "notes", e.target.value)}
                 className="w-full border rounded px-2 py-[0.375rem]"
               />
             </td>
@@ -139,15 +143,12 @@ export default function SolarWindsForm({ onBackToDashboard }) {
   return (
     <div className="min-h-screen bg-white text-black px-6 py-8">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-center mb-2">
-          SolarWinds Checks
-        </h2>
+        <h2 className="text-2xl font-bold text-center mb-2">SolarWinds Checks</h2>
         <p className="text-center text-sm text-gray-600 mb-6 max-w-2xl mx-auto">
           This checklist is used to identify and document any{" "}
           <strong>unacknowledged or critical alerts</strong> flagged within the
-          SolarWinds monitoring platform. Engineers are expected to review key
-          nodes and services daily, escalate genuine issues, and ensure all
-          alerts are either acknowledged or resolved.
+          SolarWinds monitoring platform. Engineers are expected to review key nodes and services daily,
+          escalate genuine issues, and ensure all alerts are either acknowledged or resolved.
         </p>
 
         <div className="bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
@@ -176,11 +177,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
           <ol className="list-decimal text-sm ml-5 text-gray-800 space-y-1">
             <li>Login to the SolarWinds Server.</li>
             <li>
-              Open{" "}
-              <span className="font-semibold">
-                SolarWinds Platform Service Manager
-              </span>
-              .
+              Open <span className="font-semibold">SolarWinds Platform Service Manager</span>.
             </li>
             <li>Ensure all services are running.</li>
           </ol>
@@ -188,14 +185,10 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
         {/* Service Status Check */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-red-700 mb-2">
-            Service Status Check
-          </h2>
+          <h2 className="text-lg font-semibold text-red-700 mb-2">Service Status Check</h2>
 
           <div className="mb-4">
-            <label className="block font-medium mb-1">
-              Are SolarWinds services running?
-            </label>
+            <label className="block font-medium mb-1">Are SolarWinds services running?</label>
             <div className="flex gap-4">
               <label>
                 <input
@@ -203,9 +196,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                   name="servicesRunning"
                   value="yes"
                   checked={formData.solarwinds.servicesRunning === "yes"}
-                  onChange={() =>
-                    handleChange("solarwinds", "servicesRunning", "yes")
-                  }
+                  onChange={() => handleChange("solarwinds", "servicesRunning", "yes")}
                 />{" "}
                 Yes
               </label>
@@ -215,9 +206,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                   name="servicesRunning"
                   value="no"
                   checked={formData.solarwinds.servicesRunning === "no"}
-                  onChange={() =>
-                    handleChange("solarwinds", "servicesRunning", "no")
-                  }
+                  onChange={() => handleChange("solarwinds", "servicesRunning", "no")}
                 />{" "}
                 No
               </label>
@@ -226,20 +215,12 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
           {formData.solarwinds.servicesRunning === "no" && (
             <div className="mb-2">
-              <label className="block font-medium mb-1 text-red-800">
-                Ticket Number
-              </label>
+              <label className="block font-medium mb-1 text-red-800">Ticket Number</label>
               <input
                 type="text"
                 placeholder="Enter ticket reference (e.g. INC123456)"
                 value={formData.solarwinds.serviceDownTicket}
-                onChange={(e) =>
-                  handleChange(
-                    "solarwinds",
-                    "serviceDownTicket",
-                    e.target.value
-                  )
-                }
+                onChange={(e) => handleChange("solarwinds", "serviceDownTicket", e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition"
               />
             </div>
@@ -248,12 +229,9 @@ export default function SolarWindsForm({ onBackToDashboard }) {
 
         {/* Alerts Generated Check */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold text-red-700 mb-2">
-            Alert Generated?
-          </h2>
+          <h2 className="text-lg font-semibold text-red-700 mb-2">Alert Generated?</h2>
           <p className="text-sm text-gray-700 mb-4">
-            Confirm whether new or unresolved alerts have been generated within
-            the SolarWinds platform during today’s checks.
+            Confirm whether new or unresolved alerts have been generated within the SolarWinds platform during today’s checks.
           </p>
           <div className="flex gap-4">
             <label>
@@ -262,9 +240,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 name="alertsGenerated"
                 value="yes"
                 checked={formData.solarwinds.alertsGenerated === "yes"}
-                onChange={() =>
-                  handleChange("solarwinds", "alertsGenerated", "yes")
-                }
+                onChange={() => handleChange("solarwinds", "alertsGenerated", "yes")}
               />{" "}
               Yes
             </label>
@@ -274,9 +250,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
                 name="alertsGenerated"
                 value="no"
                 checked={formData.solarwinds.alertsGenerated === "no"}
-                onChange={() =>
-                  handleChange("solarwinds", "alertsGenerated", "no")
-                }
+                onChange={() => handleChange("solarwinds", "alertsGenerated", "no")}
               />{" "}
               No
             </label>
@@ -317,18 +291,13 @@ export default function SolarWindsForm({ onBackToDashboard }) {
             </button>
           </div>
         ) : (
-          <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">
-            ⚠️ {validationMessage}
-          </p>
+          <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">⚠️ {validationMessage}</p>
         )}
       </div>
 
       {/* Back Button */}
       <div className="fixed bottom-4 left-4">
-        <button
-          onClick={onBackToDashboard}
-          className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
-        >
+        <button onClick={onBackToDashboard} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
           Back
         </button>
       </div>
