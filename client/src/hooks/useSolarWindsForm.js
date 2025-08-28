@@ -1,13 +1,28 @@
+// src/hooks/useSolarWindsForm.js
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
+import { openEmail } from "../utils/email";
+
+// Format current local datetime for <input type="datetime-local">
+function nowLocalForInput() {
+  // yyyy-MM-ddTHH:mm (no seconds)
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
 
 const defaultRowTemplate = {
   alertType: "",
   name: "",
   details: "",
-  time: "",
+  time: "",        // will be filled when adding a row
   ticket: "",
   notes: "",
   selected: false,
@@ -70,7 +85,10 @@ export default function useSolarWindsForm() {
       ...prev,
       solarwinds: {
         ...prev.solarwinds,
-        alerts: [...(prev.solarwinds.alerts || []), { ...defaultRowTemplate }],
+        alerts: [
+          ...(prev.solarwinds.alerts || []),
+          { ...defaultRowTemplate, time: nowLocalForInput() },
+        ],
       },
     }));
   };
@@ -109,7 +127,7 @@ export default function useSolarWindsForm() {
     }));
   };
 
-  // ✅ VALIDATION: for each alert row, Ticket OR Notes is required (Type, Name, Details, Time are mandatory)
+  // ✅ VALIDATION: for each alert row, Ticket OR Notes required; Type, Name, Details, Time mandatory
   const validateForm = () => {
     const { servicesRunning, alertsGenerated, alerts } = formData.solarwinds;
 
@@ -126,7 +144,7 @@ export default function useSolarWindsForm() {
         const hasType = !!a.alertType?.trim();
         const hasName = !!a.name?.trim();
         const hasDetails = !!a.details?.trim();
-        const hasTime = !!a.time?.trim();
+        const hasTime = !!a.time?.trim(); // datetime-local string like 2025-08-27T09:30
         const hasTicket = !!a.ticket?.trim();
         const hasNotes = !!a.notes?.trim();
 
@@ -151,7 +169,7 @@ export default function useSolarWindsForm() {
     setValidationMessage("");
   };
 
-  // ----- Email body for SW
+  // ----- Email body (plain text)
   function buildSolarWindsEmailBody(fd) {
     const s = (fd && fd.solarwinds) || {};
     const engineer = fd.engineer || localStorage.getItem("engineerName") || "Unknown";
@@ -234,10 +252,10 @@ export default function useSolarWindsForm() {
     // Do NOT download — keep for Admin Portal
     const dataUrl = doc.output("datauristring");
 
-    // Open email client with plaintext summary
+    // Send email using centralized util
     const subject = `SolarWinds Daily Checklist - ${fnDate} - ${engineer}`;
     const body = buildSolarWindsEmailBody({ ...formData, engineer, date: fnDate });
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    openEmail(subject, body);
 
     return { dataUrl, filename };
   };

@@ -1,7 +1,9 @@
+// src/hooks/useVeeamForm.js
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
+import { openEmail } from "../utils/email";
 
 const defaultRow = {
   type: "",
@@ -36,7 +38,7 @@ const useVeeamForm = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Alert table logic (Clarion)
+  // -------- Clarion rows
   const handleAlertChange = (index, field, value) => {
     const updated = [...formData.alerts];
     updated[index][field] = value;
@@ -67,7 +69,7 @@ const useVeeamForm = () => {
     setFormData((prev) => ({ ...prev, alerts: updated, selectAll: allSelected }));
   };
 
-  // Local backup alert logic
+  // -------- Local rows
   const handleLocalAlertChange = (index, field, value) => {
     const updated = [...formData.localAlerts];
     updated[index][field] = value;
@@ -98,26 +100,31 @@ const useVeeamForm = () => {
     setFormData((prev) => ({ ...prev, localAlerts: updated, selectAllLocal: allSelected }));
   };
 
+  // -------- Validation
   const validateForm = () => {
     const { alertsGenerated, alerts, localAlertsGenerated, localAlerts } = formData;
 
-    // Validate Clarion table
+    if (!alertsGenerated || !localAlertsGenerated) {
+      setIsFormValid(false);
+      setValidationMessage("Please answer both Clarion and Local 'Alert generated?' questions.");
+      return;
+    }
+
     if (alertsGenerated === "yes") {
       for (let a of alerts) {
-        if (!a.type || !a.vbrHost || !a.details || !a.ticket) {
+        if (!a.type || !a.vbrHost || !a.details) {
           setIsFormValid(false);
-          setValidationMessage("Please complete all fields for each Clarion alert.");
+          setValidationMessage("Complete all Clarion alert fields (Type, VBR Host, Details).");
           return;
         }
       }
     }
 
-    // Validate Local table
     if (localAlertsGenerated === "yes") {
       for (let a of localAlerts) {
-        if (!a.type || !a.vbrHost || !a.details || !a.ticket) {
+        if (!a.type || !a.vbrHost || !a.details) {
           setIsFormValid(false);
-          setValidationMessage("Please complete all fields for each Local alert.");
+          setValidationMessage("Complete all Local alert fields (Type, VBR Host, Details).");
           return;
         }
       }
@@ -127,125 +134,134 @@ const useVeeamForm = () => {
     setValidationMessage("");
   };
 
-  // --- replace handleSubmit with this ---
-const handleSubmit = () => {
-  const {
-    engineer,
-    date,
-    alertsGenerated,
-    alerts,
-    localAlertsGenerated,
-    localAlerts,
-  } = formData;
+  // -------- Email body
+  function buildVeeamEmailBody(fd) {
+    const p = fd || {};
+    const safeDate = p.date || new Date().toISOString().slice(0, 10);
 
-  const initials =
-    (engineer || "")
-      .split(" ")
-      .map((n) => n[0]?.toUpperCase())
-      .join("") || "XX";
+    const lines = [];
+    lines.push("Veeam Backup Checklist");
+    lines.push(`Engineer: ${p.engineer || "Unknown"}`);
+    lines.push(`Date: ${safeDate}`);
+    lines.push("");
 
-  const safeDate = new Date(date);
-  const formattedDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
+    lines.push("— Clarion Events —");
+    lines.push(`Alerts generated: ${p.alertsGenerated || "N/A"}`);
+    if (p.alertsGenerated === "yes" && Array.isArray(p.alerts) && p.alerts.length) {
+      p.alerts.forEach((a, i) => {
+        lines.push(
+          `#${i + 1} • ${a.type || "Type"} | Host: ${a.vbrHost || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
+        );
+      });
+    } else {
+      lines.push("No alerts.");
+    }
+    lines.push("");
 
-  const doc = new jsPDF();
-  addHeader(doc, "Veeam Backup Checklist", engineer, date);
+    lines.push("— Local Veeam —");
+    lines.push(`Alerts generated: ${p.localAlertsGenerated || "N/A"}`);
+    if (p.localAlertsGenerated === "yes" && Array.isArray(p.localAlerts) && p.localAlerts.length) {
+      p.localAlerts.forEach((a, i) => {
+        lines.push(
+          `#${i + 1} • ${a.type || "Type"} | Host: ${a.vbrHost || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
+        );
+      });
+    } else {
+      lines.push("No alerts.");
+    }
 
-  let y = 50;
-
-  // Clarion Events Section
-  doc.setFontSize(11);
-  doc.text("Clarion Events Veeam Backup", 14, y);
-  y += 7;
-  doc.text("Use Clarion RDS or UK1-PAN01 to RDP into:", 14, y);
-  y += 7;
-  doc.text("CT - US2-VEEAM01 | TUL - US1-VEEAM01 | SG - SG-VEEAM01 | UK - UK1-VEEAM365", 14, y);
-  y += 10;
-  doc.text(`Alerts Generated: ${alertsGenerated || "N/A"}`, 14, y);
-  y += 5;
-
-  if (alertsGenerated === "yes" && alerts.length > 0) {
-    const rows = alerts.map((a, i) => [
-      i + 1,
-      a.type,
-      a.vbrHost,
-      a.details,
-      a.ticket,
-      a.notes || "-",
-    ]);
-
-    autoTable(doc, {
-      head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
-      body: rows,
-      startY: y + 5,
-      styles: { fontSize: 9 },
-    });
-
-    y = doc.lastAutoTable.finalY + 10;
+    lines.push("");
+    lines.push("— Meta —");
+    lines.push("This message was generated from the daily checks app.");
+    return lines.join("\n");
   }
 
-  // Local Veeam Backup
-  doc.text("Local Veeam Backup", 14, y);
-  y += 7;
-  doc.text("https://192.168.69.219:1280/", 14, y);
-  y += 7;
-  doc.text("Sign In with your ADM account.", 14, y);
-  y += 7;
-  doc.text("Go to Management > Backup Jobs. Check both Virtual Machines and M365 tabs.", 14, y);
-  y += 7;
-  doc.text(`Alerts Generated: ${localAlertsGenerated || "N/A"}`, 14, y);
-  y += 5;
+  // -------- PDF + open email (no download)
+  const handleSubmit = () => {
+    const {
+      engineer = localStorage.getItem("engineerName") || "Unknown",
+      date = localStorage.getItem("checkDate") || new Date().toISOString(),
+      alertsGenerated,
+      alerts = [],
+      localAlertsGenerated,
+      localAlerts = [],
+    } = formData;
 
-  if (localAlertsGenerated === "yes" && localAlerts.length > 0) {
-    const rows = localAlerts.map((a, i) => [
-      i + 1,
-      a.type,
-      a.vbrHost,
-      a.details,
-      a.ticket,
-      a.notes || "-",
-    ]);
+    const doc = new jsPDF();
+    addHeader(doc, "Veeam Backup Checklist", engineer, date);
+    let y = 50;
 
-    autoTable(doc, {
-      head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
-      body: rows,
-      startY: y + 5,
-      styles: { fontSize: 9 },
-    });
-  }
+    doc.setFontSize(11);
+    doc.text(`Engineer: ${engineer}`, 14, y); y += 6;
+    doc.text(`Date: ${date}`, 14, y); y += 10;
 
-  const filename = `veeam-checklist-${initials}-${formattedDate}.pdf`;
+    // Clarion
+    doc.text("Clarion Events", 14, y); y += 6;
+    doc.text(`Alerts generated: ${alertsGenerated || "N/A"}`, 14, y); y += 4;
+    if (alertsGenerated === "yes" && alerts.length) {
+      autoTable(doc, {
+        head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+        body: alerts.map((a, i) => [i + 1, a.type, a.vbrHost, a.details, a.ticket || "-", a.notes || "-"]),
+        startY: y + 2,
+        styles: { fontSize: 9 },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    } else {
+      doc.text("No alerts.", 14, y); y += 8;
+    }
 
-  // 👉 get a Data URL so Admin Portal can embed it
-  const dataUrl = doc.output("datauristring");
+    // Local
+    doc.text("Local Veeam", 14, y); y += 6;
+    doc.text(`Alerts generated: ${localAlertsGenerated || "N/A"}`, 14, y); y += 4;
+    if (localAlertsGenerated === "yes" && localAlerts.length) {
+      autoTable(doc, {
+        head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+        body: localAlerts.map((a, i) => [i + 1, a.type, a.vbrHost, a.details, a.ticket || "-", a.notes || "-"]),
+        startY: y + 2,
+        styles: { fontSize: 9 },
+      });
+    } else {
+      doc.text("No alerts.", 14, y);
+    }
 
-  // still download for the user
-  doc.save(filename);
+    const initials = (engineer || "XX").split(" ").map((n) => n[0]?.toUpperCase()).join("") || "XX";
+    const safeDate = new Date(date);
+    const fnDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
+    const filename = `veeam-checklist-${initials}-${fnDate}.pdf`;
 
-  // return info so the form can store it with the submission
-  return { dataUrl, filename };
-};
+    // Do NOT download — keep for Admin Portal preview
+    const dataUrl = doc.output("datauristring");
 
-// --- replace handleFinalSubmit with this ---
-const handleFinalSubmit = () => {
-  if (isFormValid) {
-    return handleSubmit(); // returns { dataUrl, filename }
-  }
-  return undefined;
-};
+    // Open default mail client with plain-text summary
+    const subject = `Veeam Daily Checklist - ${fnDate} - ${engineer}`;
+    const body = buildVeeamEmailBody({ ...formData, engineer, date: fnDate });
+    openEmail(subject, body);
 
+    // Return so caller (form component) can save the PDF to Admin Portal
+    return { dataUrl, filename };
+  };
+
+  const handleFinalSubmit = () => {
+    if (isFormValid) return handleSubmit();
+    return undefined;
+  };
 
   const isSubmissionReady = () => {
     const alerts = formData.alerts || [];
-    return formData.alertsGenerated === "yes" &&
+    return (
+      formData.alertsGenerated === "yes" &&
       alerts.length > 0 &&
-      alerts.every((a) => a.type && a.vbrHost && a.details && a.ticket);
+      alerts.every((a) => a.type && a.vbrHost && a.details)
+    );
   };
 
   const isLocalSubmissionReady = () => {
     const alerts = formData.localAlerts || [];
-    return formData.localAlertsGenerated === "yes" &&
+    return (
+      formData.localAlertsGenerated === "yes" &&
       alerts.length > 0 &&
-      alerts.every((a) => a.type && a.vbrHost && a.details && a.ticket);
+      alerts.every((a) => a.type && a.vbrHost && a.details)
+    );
   };
 
   return {

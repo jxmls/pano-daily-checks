@@ -1,8 +1,88 @@
 // src/components/SolarWindsForm.js
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useSolarWindsForm from "../hooks/useSolarWindsForm";
 import { saveSubmission } from "../utils/SaveSubmission";
 
+/* ---------- helpers for datetime handling ---------- */
+function pad(n) { return String(n).padStart(2, "0"); }
+function nowLocalForInput() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function parseToParts(v) {
+  // v like "YYYY-MM-DDTHH:MM"
+  if (!v || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) {
+    const now = nowLocalForInput();
+    const [date, time] = now.split("T");
+    return { date, time };
+  }
+  const [date, time] = v.split("T");
+  return { date, time: time.slice(0,5) };
+}
+function supportsDateTimeLocal() {
+  const i = document.createElement("input");
+  i.setAttribute("type", "datetime-local");
+  return i.type === "datetime-local";
+}
+
+/* A cell that either renders a native datetime-local or a date+time pair */
+function DateTimeCell({ value, onChange, className = "" }) {
+  const nativeSupported = useMemo(() => supportsDateTimeLocal(), []);
+  const parts = useMemo(() => parseToParts(value), [value]);
+  const [date, setDate] = useState(parts.date);
+  const [time, setTime] = useState(parts.time);
+
+  useEffect(() => {
+    // sync when parent value changes (e.g. row reset)
+    const p = parseToParts(value);
+    setDate(p.date);
+    setTime(p.time);
+  }, [value]);
+
+  const commit = (d, t) => {
+    if (d && t) onChange(`${d}T${t}`);
+    else onChange(""); // keep empty until both parts are present
+  };
+
+  if (nativeSupported) {
+    return (
+      <input
+        type="datetime-local"
+        value={value || `${date}T${time}`}
+        onChange={(e) => onChange(e.target.value)}
+        className={className}
+      />
+    );
+  }
+
+  // Fallback: separate date and time inputs
+  return (
+    <div className="flex gap-1">
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => {
+          const d = e.target.value;
+          setDate(d);
+          commit(d, time);
+        }}
+        className={className}
+      />
+      <input
+        type="time"
+        value={time}
+        onChange={(e) => {
+          const t = e.target.value;
+          setTime(t);
+          commit(date, t);
+        }}
+        className={className}
+      />
+    </div>
+  );
+}
+
+/* ---------------- component ---------------- */
 export default function SolarWindsForm({ onBackToDashboard }) {
   const {
     formData,
@@ -12,7 +92,7 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     deleteSelectedRows,
     toggleRowSelection,
     toggleSelectAll,
-    handleFinalSubmit, // now returns { dataUrl, filename } when valid
+    handleFinalSubmit, // returns { dataUrl, filename }
     isFormValid,
     validationMessage,
     selectAll,
@@ -26,11 +106,10 @@ export default function SolarWindsForm({ onBackToDashboard }) {
     handleChange("root", "date", storedDate);
   }, []);
 
-  const handleFinalSubmitAndReturn = async () => {
+  const handleFinalSubmitAndReturn = () => {
     const pdf = handleFinalSubmit(); // { dataUrl, filename } | undefined
 
-    // Decide module-level pass/fail for this submission:
-    // Pass when servicesRunning === "yes" and alertsGenerated === "no"
+    // Module pass rule: servicesRunning === "yes" AND alertsGenerated === "no"
     const passed =
       (formData?.solarwinds?.servicesRunning || "").toLowerCase() === "yes" &&
       (formData?.solarwinds?.alertsGenerated || "").toLowerCase() === "no";
@@ -114,9 +193,10 @@ export default function SolarWindsForm({ onBackToDashboard }) {
               />
             </td>
             <td className="border px-3 py-2 align-middle">
-              <input
+              {/* 🔹 robust date/time picker with fallback */}
+              <DateTimeCell
                 value={row.time || ""}
-                onChange={(e) => handleAlertChange(index, "time", e.target.value)}
+                onChange={(v) => handleAlertChange(index, "time", v)}
                 className="w-full border rounded px-2 py-[0.375rem]"
               />
             </td>
@@ -291,7 +371,9 @@ export default function SolarWindsForm({ onBackToDashboard }) {
             </button>
           </div>
         ) : (
-          <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">⚠️ {validationMessage}</p>
+          <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">
+            ⚠️ {validationMessage}
+          </p>
         )}
       </div>
 

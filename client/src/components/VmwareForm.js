@@ -1,5 +1,7 @@
+// src/components/VmwareForm.js
 import React, { useEffect } from "react";
 import useVmwareForm from "../hooks/useVmwareForm";
+import { openEmail } from "../utils/email";
 
 export default function VmwareForm({ onBackToDashboard }) {
   const {
@@ -55,10 +57,10 @@ export default function VmwareForm({ onBackToDashboard }) {
   const openEmailClient = (row, key) => {
     const subject = decodeURIComponent(generateTicketSubject(row));
     const body = decodeURIComponent(generateTicketBody(row, key));
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    openEmail(subject, body); // ✅ use shared helper (respects TO/CC/BCC config)
   };
 
-  // ✅ Moved here to avoid "renderTable not defined" error
+  // Table renderer
   const renderTable = (key) => {
     const rows = formData.vsan?.alerts?.[key]?.rows || [];
     return (
@@ -177,31 +179,26 @@ export default function VmwareForm({ onBackToDashboard }) {
     );
   };
 
-  // ✅ Updated Section Layout (non-clickable badge-style)
   const renderSection = (title, description, links, key) => (
     <div className="bg-white border rounded-lg shadow-sm p-6 mb-10">
       <h2 className="text-xl font-bold mb-2">{title}</h2>
       <p className="mb-4 text-sm text-gray-700">{description}</p>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-  {links.map((link, i) => (
-    <div
-      key={i}
-      className="flex items-center gap-3 p-3 border rounded bg-gray-50 hover:bg-gray-100 transition"
-    >
-      <span className="text-xs font-bold text-white bg-blue-600 px-2 py-1 rounded w-fit min-w-[50px] text-center">
-        {link.label}
-      </span>
-      <span className="text-sm font-mono text-gray-700 break-all">
-        {link.href}
-      </span>
-    </div>
-  ))}
-</div>
-
-
-
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        {links.map((link, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 p-3 border rounded bg-gray-50 hover:bg-gray-100 transition"
+          >
+            <span className="text-xs font-bold text-white bg-blue-600 px-2 py-1 rounded w-fit min-w-[50px] text-center">
+              {link.label}
+            </span>
+            <span className="text-sm font-mono text-gray-700 break-all">
+              {link.href}
+            </span>
+          </div>
+        ))}
+      </div>
 
       <div className="mb-4">
         <label className="block font-medium mb-1">Alert generated?</label>
@@ -236,9 +233,9 @@ export default function VmwareForm({ onBackToDashboard }) {
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">VMware vSAN Checks</h1>
-<p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
-  This checklist is used to document and escalate any vSAN Skyline Health alerts, triggered events, or anomalies observed across monitored VMware environments. It ensures early detection and consistent tracking of potential infrastructure issues.
-</p>
+      <p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
+        This checklist is used to document and escalate any vSAN Skyline Health alerts, triggered events, or anomalies observed across monitored VMware environments. It ensures early detection and consistent tracking of potential infrastructure issues.
+      </p>
 
       {renderSection(
         "Clarion Events Ltd.",
@@ -278,7 +275,7 @@ export default function VmwareForm({ onBackToDashboard }) {
         <div className="flex justify-center mt-8">
           <button
             onClick={() => {
-              handleSubmit();
+              handleSubmit(); // opens email + generates PDF dataUrl for Admin Portal (saved by parent if desired)
               onBackToDashboard();
             }}
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
