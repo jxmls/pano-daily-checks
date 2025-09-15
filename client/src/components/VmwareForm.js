@@ -1,16 +1,11 @@
 // src/components/VmwareForm.js
 import React, { useEffect } from "react";
 import useVmwareForm from "../hooks/useVmwareForm";
-import { openEmail } from "../utils/email"; // add this import
-
-// ...
-
-const openEmailClient = (row, key) => {
-  const subject = generateTicketSubject(row);      // plain
-  const body = generateTicketBody(row, key);       // plain
-  openEmail(subject, body);                        // centralised recipients + correct encoding
-};
-
+import {
+  openEmailWithTargets,
+  EMAIL_LISTS,
+  formatEmail,
+} from "../utils/composeEmail";
 
 export default function VmwareForm({ onBackToDashboard }) {
   const {
@@ -22,14 +17,13 @@ export default function VmwareForm({ onBackToDashboard }) {
     deleteSelectedRows,
     toggleSelectAll,
     handleSubmit,
-    generateTicketBody,
-    generateTicketSubject,
+    generateTicketBody,      // existing (used for PDF etc.)
+    generateTicketSubject,   // existing
   } = useVmwareForm();
 
   const isSubmissionReady = () => {
     const requiredKeys = ["clarion", "panoptics", "volac"];
     const alerts = formData.vsan?.alerts || {};
-
     return requiredKeys.every((key) => {
       const alert = alerts[key];
       const alertValue = alert?.alert;
@@ -38,11 +32,7 @@ export default function VmwareForm({ onBackToDashboard }) {
         const rows = alert?.rows || [];
         if (rows.length === 0) return false;
         return rows.every(
-          (row) =>
-            row.alertType?.trim() &&
-            row.host?.trim() &&
-            row.details?.trim() &&
-            row.ticket?.trim()
+          (row) => row.alertType?.trim() && row.host?.trim() && row.details?.trim() && row.ticket?.trim()
         );
       }
       return true;
@@ -65,11 +55,23 @@ export default function VmwareForm({ onBackToDashboard }) {
 
   const openEmailClient = (row, key) => {
     const subject = decodeURIComponent(generateTicketSubject(row));
-    const body = decodeURIComponent(generateTicketBody(row, key));
-    openEmail(subject, body); // ✅ use shared helper (respects TO/CC/BCC config)
+    // Build a pretty plain-text body for mailto (independent of PDF body)
+    const body = formatEmail({
+      title: `VMware vSAN — ${key.toUpperCase()}`,
+      sections: [{
+        heading: "Alert",
+        lines: [
+          `Severity: ${row.alertType || "–"}`,
+          `Host: ${row.host || "–"}`,
+          `Details: ${row.details || "–"}`,
+          `Ticket: ${row.ticket || "–"}`,
+          ...(row.notes ? [`Notes: ${row.notes}`] : []),
+        ],
+      }],
+    });
+    openEmailWithTargets(subject, body, EMAIL_LISTS.vmware);
   };
 
-  // Table renderer
   const renderTable = (key) => {
     const rows = formData.vsan?.alerts?.[key]?.rows || [];
     return (
@@ -156,20 +158,8 @@ export default function VmwareForm({ onBackToDashboard }) {
         </table>
 
         <div className="flex gap-4 mt-4 flex-wrap">
-          <button
-            type="button"
-            onClick={() => addAlertRow("vsan", key)}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
-          >
-            ➕ Add Row
-          </button>
-          <button
-            type="button"
-            onClick={() => deleteSelectedRows("vsan", key)}
-            className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
-          >
-            🗑️ Delete Selected
-          </button>
+          <button type="button" onClick={() => addAlertRow("vsan", key)} className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded">➕ Add Row</button>
+          <button type="button" onClick={() => deleteSelectedRows("vsan", key)} className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded">🗑️ Delete Selected</button>
 
           {rows
             .filter((r) => r.selected && r.alertType && r.host && r.details)
@@ -195,16 +185,9 @@ export default function VmwareForm({ onBackToDashboard }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         {links.map((link, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 p-3 border rounded bg-gray-50 hover:bg-gray-100 transition"
-          >
-            <span className="text-xs font-bold text-white bg-blue-600 px-2 py-1 rounded w-fit min-w-[50px] text-center">
-              {link.label}
-            </span>
-            <span className="text-sm font-mono text-gray-700 break-all">
-              {link.href}
-            </span>
+          <div key={i} className="flex items-center gap-3 p-3 border rounded bg-gray-50 hover:bg-gray-100 transition">
+            <span className="text-xs font-bold text-white bg-blue-600 px-2 py-1 rounded w-fit min-w-[50px] text-center">{link.label}</span>
+            <span className="text-sm font-mono text-gray-700 break-all">{link.href}</span>
           </div>
         ))}
       </div>
@@ -212,26 +195,8 @@ export default function VmwareForm({ onBackToDashboard }) {
       <div className="mb-4">
         <label className="block font-medium mb-1">Alert generated?</label>
         <div className="flex gap-4">
-          <label>
-            <input
-              type="radio"
-              name={`alertGenerated-${key}`}
-              value="yes"
-              checked={formData.vsan?.alerts?.[key]?.alert === "yes"}
-              onChange={() => handleChange("vsan", `alerts.${key}.alert`, "yes")}
-            />{" "}
-            Yes
-          </label>
-          <label>
-            <input
-              type="radio"
-              name={`alertGenerated-${key}`}
-              value="no"
-              checked={formData.vsan?.alerts?.[key]?.alert === "no"}
-              onChange={() => handleChange("vsan", `alerts.${key}.alert`, "no")}
-            />{" "}
-            No
-          </label>
+          <label><input type="radio" name={`alertGenerated-${key}`} value="yes" checked={formData.vsan?.alerts?.[key]?.alert === "yes"} onChange={() => handleChange("vsan", `alerts.${key}.alert`, "yes")} /> Yes</label>
+          <label><input type="radio" name={`alertGenerated-${key}`} value="no"  checked={formData.vsan?.alerts?.[key]?.alert === "no"}  onChange={() => handleChange("vsan", `alerts.${key}.alert`, "no")}  /> No</label>
         </div>
       </div>
 
@@ -243,7 +208,7 @@ export default function VmwareForm({ onBackToDashboard }) {
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">VMware vSAN Checks</h1>
       <p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
-        This checklist is used to document and escalate any vSAN Skyline Health alerts, triggered events, or anomalies observed across monitored VMware environments. It ensures early detection and consistent tracking of potential infrastructure issues.
+        Document and escalate any vSAN Skyline Health alerts or anomalies.
       </p>
 
       {renderSection(
@@ -283,10 +248,7 @@ export default function VmwareForm({ onBackToDashboard }) {
       {isSubmissionReady() ? (
         <div className="flex justify-center mt-8">
           <button
-            onClick={() => {
-              handleSubmit(); // opens email + generates PDF dataUrl for Admin Portal (saved by parent if desired)
-              onBackToDashboard();
-            }}
+            onClick={() => { handleSubmit(); onBackToDashboard(); }}
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
           >
             Submit Checklist
@@ -294,15 +256,12 @@ export default function VmwareForm({ onBackToDashboard }) {
         </div>
       ) : (
         <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">
-          ⚠️ Please answer all “Alert generated?” questions and fill in all required fields (Alert Type, Host, Details, Ticket) for any section where you selected “Yes”.
+          ⚠️ Please answer all “Alert generated?” questions and fill required fields (Alert Type, Host, Details, Ticket).
         </p>
       )}
 
       <div className="mt-10">
-        <button
-          onClick={onBackToDashboard}
-          className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
-        >
+        <button onClick={onBackToDashboard} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
           Back
         </button>
       </div>

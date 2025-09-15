@@ -1,7 +1,11 @@
 // src/components/CheckpointForm.js
 import React, { useEffect } from "react";
 import useCheckpointForm from "../hooks/useCheckpointForm";
-import { openEmail } from "../utils/email";
+import {
+  openEmailWithTargets,
+  EMAIL_LISTS,
+  buildCheckpointRowBody,
+} from "../utils/composeEmail";
 
 export default function CheckpointForm({ onBackToDashboard }) {
   const {
@@ -27,16 +31,9 @@ export default function CheckpointForm({ onBackToDashboard }) {
   const inputClass = "w-full border rounded px-2 py-1";
 
   const openEmailClient = (row, title) => {
-    const subject = `Checkpoint Alert: ${row.name || "Unnamed Alert"}`;
-    const body =
-      `Environment: ${title}\n` +
-      `Severity: ${row.severity || "-"}\n` +
-      `Alert Name: ${row.name || "-"}\n` +
-      `Machine: ${row.machine || "-"}\n` +
-      `Details: ${row.details || "-"}\n` +
-      (row.ticket ? `Ticket: ${row.ticket}\n` : "") +
-      (row.notes ? `Notes: ${row.notes}\n` : "");
-    openEmail(subject, body);
+    const subject = `Checkpoint Alert — ${title}: ${row.name || "Unnamed"}`;
+    const body = buildCheckpointRowBody(row, title);
+    openEmailWithTargets(subject, body, EMAIL_LISTS.checkpoint);
   };
 
   const renderAlertTable = (alerts, org, titleForEmail) => {
@@ -138,20 +135,8 @@ export default function CheckpointForm({ onBackToDashboard }) {
         </table>
 
         <div className="flex gap-4 mt-4 items-center flex-wrap">
-          <button
-            type="button"
-            onClick={() => addAlertRow(org)}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
-          >
-            ➕ Add Row
-          </button>
-          <button
-            type="button"
-            onClick={() => deleteSelectedRows(org)}
-            className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
-          >
-            🗑️ Delete Selected
-          </button>
+          <button type="button" onClick={() => addAlertRow(org)} className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded">➕ Add Row</button>
+          <button type="button" onClick={() => deleteSelectedRows(org)} className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded">🗑️ Delete Selected</button>
 
           {selectedRow && (
             <button
@@ -172,30 +157,11 @@ export default function CheckpointForm({ onBackToDashboard }) {
       <h2 className="text-xl font-bold mb-3">{title}</h2>
       <label className="block font-medium mb-1">Alert generated?</label>
       <div className="flex gap-4 mb-4">
-        <label>
-          <input
-            type="radio"
-            name={`${org}Alert`}
-            value="yes"
-            checked={formData[org].alertsGenerated === "yes"}
-            onChange={() => handleChange(org, "alertsGenerated", "yes")}
-          />{" "}
-          Yes
-        </label>
-        <label>
-          <input
-            type="radio"
-            name={`${org}Alert`}
-            value="no"
-            checked={formData[org].alertsGenerated === "no"}
-            onChange={() => handleChange(org, "alertsGenerated", "no")}
-          />{" "}
-          No
-        </label>
+        <label><input type="radio" name={`${org}Alert`} value="yes" checked={formData[org].alertsGenerated === "yes"} onChange={() => handleChange(org, "alertsGenerated", "yes")} /> Yes</label>
+        <label><input type="radio" name={`${org}Alert`} value="no"  checked={formData[org].alertsGenerated === "no"}  onChange={() => handleChange(org, "alertsGenerated", "no")}  /> No</label>
       </div>
 
-      {formData[org].alertsGenerated === "yes" &&
-        renderAlertTable(formData[org].alerts, org, title)}
+      {formData[org].alertsGenerated === "yes" && renderAlertTable(formData[org].alerts, org, title)}
     </div>
   );
 
@@ -203,7 +169,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Checkpoint Checks</h1>
       <p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
-        This checklist is used to review and record any critical alerts detected within the Checkpoint Infinity Portal for both Panoptics Global Ltd and The Brewery.
+        Review and record any critical alerts detected within Checkpoint Infinity Portal for both Panoptics and The Brewery.
       </p>
 
       <div className="bg-gray-50 border rounded px-4 py-3 text-sm shadow-sm mb-6">
@@ -221,26 +187,16 @@ export default function CheckpointForm({ onBackToDashboard }) {
 
       {isFormValid ? (
         <div className="flex justify-center mt-8">
-          <button
-            onClick={handleFinalSubmit}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-          >
+          <button onClick={handleFinalSubmit} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
             Submit Checklist
           </button>
         </div>
       ) : (
-        <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">
-          ⚠️ {validationMessage}
-        </p>
+        <p className="text-center text-sm text-red-600 mt-8 max-w-md mx-auto">⚠️ {validationMessage}</p>
       )}
 
       <div className="mt-10">
-        <button
-          onClick={onBackToDashboard}
-          className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
-        >
-          Back
-        </button>
+        <button onClick={onBackToDashboard} className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Back</button>
       </div>
     </div>
   );
