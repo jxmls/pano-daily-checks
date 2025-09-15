@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import useVeeamForm from "../hooks/useVeeamForm";
+import { openEmail } from "../utils/email";
 import { saveSubmission } from "../utils/SaveSubmission";
-
-
 
 export default function VeeamForm({ onBackToDashboard }) {
   const {
@@ -41,48 +40,53 @@ export default function VeeamForm({ onBackToDashboard }) {
       (formData.localAlertsGenerated === "yes" && isLocalSubmissionReady()));
 
   const openEmailClient = (row) => {
-    const subject = encodeURIComponent(`Veeam Alert: ${row.vbrHost}`);
-    const body = encodeURIComponent(
-      `Type: ${row.type}\nVBR Host: ${row.vbrHost}\nDetails: ${row.details}\nTicket: ${row.ticket}`
-    );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    const subject = `Veeam Alert: ${row.vbrHost || "-"}`;
+    const body =
+      `Type: ${row.type || "-"}\n` +
+      `VBR Host: ${row.vbrHost || "-"}\n` +
+      `Details: ${row.details || "-"}\n` +
+      (row.ticket ? `Ticket: ${row.ticket}\n` : "") +
+      (row.notes ? `Notes: ${row.notes}\n` : "");
+    openEmail(subject, body);
   };
 
   return (
     <div className="min-h-screen bg-white text-black p-6 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-center">Veeam Backup Checks</h1>
-<p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
-  This checklist is used to review and document any warnings or failures identified in the Veeam Backup & Replication environments across all listed customer platforms. It ensures that any backup issues are tracked, addressed, and escalated where necessary.
-</p>
+      <p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
+        This checklist is used to review and document any warnings or failures identified in the
+        Veeam Backup &amp; Replication environments across all listed customer platforms. It ensures
+        that any backup issues are tracked, addressed, and escalated where necessary.
+      </p>
 
       {/* Clarion Section */}
       <div className="bg-gray-50 border rounded-lg p-4 shadow-sm mb-8">
         <p className="text-sm text-gray-700 mb-2 font-semibold">Clarion Events Veeam Backup</p>
-       <div className="bg-gray-50 p-4 rounded border text-sm mb-6">
-  <p className="font-semibold mb-1">Clarion Events Veeam Backup</p>
-  <p className="mb-2">
-    For accessing remote environments, use the Clarion RDS farm or UK1-PAN01 and RDP to:
-  </p>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-    <div className="flex items-center space-x-2">
-      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">CT</span>
-      <span>https://us2-veeam01.clarionevents.local/</span>
-    </div>
-    <div className="flex items-center space-x-2">
-      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">TUL</span>
-      <span>https://us1-veeam01.clarionevents.local/</span>
-    </div>
-    <div className="flex items-center space-x-2">
-      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">SG</span>
-      <span>https://sg-veeam01.clarionevents.local/</span>
-    </div>
-    <div className="flex items-center space-x-2">
-      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">UK</span>
-      <span>https://uk1-veeam365.clarionevents.local/</span>
-    </div>
-  </div>
-</div>
 
+        <div className="bg-gray-50 p-4 rounded border text-sm mb-6">
+          <p className="font-semibold mb-1">Clarion Events Veeam Backup</p>
+          <p className="mb-2">
+            For accessing remote environments, use the Clarion RDS farm or UK1-PAN01 and RDP to:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">CT</span>
+              <span>https://us2-veeam01.clarionevents.local/</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">TUL</span>
+              <span>https://us1-veeam01.clarionevents.local/</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">SG</span>
+              <span>https://sg-veeam01.clarionevents.local/</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">UK</span>
+              <span>https://uk1-veeam365.clarionevents.local/</span>
+            </div>
+          </div>
+        </div>
 
         <label className="font-semibold block mb-2">Alert generated?</label>
         <div className="mb-4">
@@ -127,25 +131,25 @@ export default function VeeamForm({ onBackToDashboard }) {
       {/* Local Section */}
       <div className="bg-gray-50 border rounded-lg p-4 shadow-sm mb-8">
         <p className="text-sm text-gray-700 mb-2 font-semibold">Local Veeam Backup</p>
-        <div className="bg-gray-50 p-4 rounded border text-sm mb-6">
-  <p className="font-semibold mb-1">Local Veeam Backup</p>
-  <div className="flex items-center space-x-2 mb-2">
-    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">URL</span>
-    <a
-      href="https://192.168.69.219:1280/"
-      target="_blank"
-      rel="noreferrer"
-      className="text-blue-700 underline"
-    >
-      https://192.168.69.219:1280/
-    </a>
-  </div>
-  <p>Sign in with your ADM account.</p>
-  <p>
-    Navigate to <strong>Management &gt; Backup Jobs</strong> to review errors and warnings.
-  </p>
-</div>
 
+        <div className="bg-gray-50 p-4 rounded border text-sm mb-6">
+          <p className="font-semibold mb-1">Local Veeam Backup</p>
+          <div className="flex items-center space-x-2 mb-2">
+            <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">URL</span>
+            <a
+              href="https://192.168.69.219:1280/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-700 underline"
+            >
+              https://192.168.69.219:1280/
+            </a>
+          </div>
+          <p>Sign in with your ADM account.</p>
+          <p>
+            Navigate to <strong>Management &gt; Backup Jobs</strong> to review errors and warnings.
+          </p>
+        </div>
 
         <label className="font-semibold block mb-2">Alert generated?</label>
         <div className="mb-4">
@@ -216,32 +220,32 @@ export default function VeeamForm({ onBackToDashboard }) {
           Back
         </button>
 
-      {showSubmit && (
-  <button
-    onClick={() => {
-      const pdf = handleFinalSubmit(); // pdf is { dataUrl, filename } or undefined
+        {showSubmit && (
+          <button
+            onClick={() => {
+              const pdf = handleFinalSubmit(); // { dataUrl, filename } or undefined
 
-      const passed =
-        (formData.alertsGenerated === "no" || isSubmissionReady()) &&
-        (formData.localAlertsGenerated === "no" || isLocalSubmissionReady());
+              const passed =
+                (formData.alertsGenerated === "no" || isSubmissionReady()) &&
+                (formData.localAlertsGenerated === "no" || isLocalSubmissionReady());
 
-      saveSubmission({
-        module: "veeam",
-        engineer: formData.engineer || localStorage.getItem("engineerName") || "Unknown",
-        passed,
-        meta: { clients: ["Clarion", "Local"], notes: "Submitted from VeeamForm" },
-        payload: formData,
-        pdf: pdf ? { name: pdf.filename, dataUrl: pdf.dataUrl } : undefined, // 👈 attach PDF
-      });
+              saveSubmission({
+                module: "veeam",
+                engineer:
+                  formData.engineer || localStorage.getItem("engineerName") || "Unknown",
+                passed,
+                meta: { clients: ["Clarion", "Local"], notes: "Submitted from VeeamForm" },
+                payload: formData,
+                pdf: pdf ? { name: pdf.filename, dataUrl: pdf.dataUrl } : undefined,
+              });
 
-      onBackToDashboard();
-    }}
-    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-  >
-    Submit Checklist
-  </button>
-)}
-
+              onBackToDashboard();
+            }}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Submit Checklist
+          </button>
+        )}
       </div>
     </div>
   );
@@ -268,11 +272,7 @@ function renderAlertTable(
         <thead>
           <tr className="bg-gray-200">
             <th className="p-2 text-center">
-              <input
-                type="checkbox"
-                checked={selectAll || false}
-                onChange={toggleSelectAll}
-              />
+              <input type="checkbox" checked={selectAll || false} onChange={toggleSelectAll} />
             </th>
             <th className="p-2">Type</th>
             <th className="p-2">VBR Host</th>

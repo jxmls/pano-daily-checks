@@ -1,5 +1,7 @@
+// src/components/CheckpointForm.js
 import React, { useEffect } from "react";
 import useCheckpointForm from "../hooks/useCheckpointForm";
+import { openEmail } from "../utils/email";
 
 export default function CheckpointForm({ onBackToDashboard }) {
   const {
@@ -24,15 +26,20 @@ export default function CheckpointForm({ onBackToDashboard }) {
 
   const inputClass = "w-full border rounded px-2 py-1";
 
-  const openEmailClient = (row) => {
-    const subject = encodeURIComponent(`Checkpoint Alert: ${row.name}`);
-    const body = encodeURIComponent(
-      `Severity: ${row.severity}\nAlert Name: ${row.name}\nMachine: ${row.machine}\nDetails: ${row.details}\nTicket: ${row.ticket}`
-    );
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  const openEmailClient = (row, title) => {
+    const subject = `Checkpoint Alert: ${row.name || "Unnamed Alert"}`;
+    const body =
+      `Environment: ${title}\n` +
+      `Severity: ${row.severity || "-"}\n` +
+      `Alert Name: ${row.name || "-"}\n` +
+      `Machine: ${row.machine || "-"}\n` +
+      `Details: ${row.details || "-"}\n` +
+      (row.ticket ? `Ticket: ${row.ticket}\n` : "") +
+      (row.notes ? `Notes: ${row.notes}\n` : "");
+    openEmail(subject, body);
   };
 
-  const renderAlertTable = (alerts, org) => {
+  const renderAlertTable = (alerts, org, titleForEmail) => {
     const selectedRow = alerts.find(
       (r) => r.selected && r.severity && r.name && r.machine && r.details
     );
@@ -45,7 +52,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
               <th className="border px-3 py-2 text-center">
                 <input
                   type="checkbox"
-                  checked={formData[org].selectAll}
+                  checked={formData[org].selectAll || false}
                   onChange={() => toggleSelectAll(org)}
                 />
               </th>
@@ -63,11 +70,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
                 key={index}
                 onClick={() => toggleRowSelection(org, index)}
                 className={`cursor-pointer ${
-                  row.selected
-                    ? "bg-blue-100"
-                    : index % 2 === 0
-                    ? "bg-white"
-                    : "bg-gray-50"
+                  row.selected ? "bg-blue-100" : index % 2 === 0 ? "bg-white" : "bg-gray-50"
                 }`}
               >
                 <td className="border px-3 py-2 text-center">
@@ -83,9 +86,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
                 <td className="border px-3 py-2">
                   <select
                     value={row.severity || ""}
-                    onChange={(e) =>
-                      handleAlertChange(org, index, "severity", e.target.value)
-                    }
+                    onChange={(e) => handleAlertChange(org, index, "severity", e.target.value)}
                     className={inputClass}
                   >
                     <option value="">Select</option>
@@ -98,27 +99,21 @@ export default function CheckpointForm({ onBackToDashboard }) {
                 <td className="border px-3 py-2">
                   <input
                     value={row.name || ""}
-                    onChange={(e) =>
-                      handleAlertChange(org, index, "name", e.target.value)
-                    }
+                    onChange={(e) => handleAlertChange(org, index, "name", e.target.value)}
                     className={inputClass}
                   />
                 </td>
                 <td className="border px-3 py-2">
                   <input
                     value={row.machine || ""}
-                    onChange={(e) =>
-                      handleAlertChange(org, index, "machine", e.target.value)
-                    }
+                    onChange={(e) => handleAlertChange(org, index, "machine", e.target.value)}
                     className={inputClass}
                   />
                 </td>
                 <td className="border px-3 py-2">
                   <input
                     value={row.details || ""}
-                    onChange={(e) =>
-                      handleAlertChange(org, index, "details", e.target.value)
-                    }
+                    onChange={(e) => handleAlertChange(org, index, "details", e.target.value)}
                     className={inputClass}
                   />
                 </td>
@@ -126,18 +121,14 @@ export default function CheckpointForm({ onBackToDashboard }) {
                   <input
                     value={row.ticket || ""}
                     placeholder="e.g. INC123456 or NA"
-                    onChange={(e) =>
-                      handleAlertChange(org, index, "ticket", e.target.value)
-                    }
+                    onChange={(e) => handleAlertChange(org, index, "ticket", e.target.value)}
                     className={inputClass}
                   />
                 </td>
                 <td className="border px-3 py-2">
                   <input
                     value={row.notes || ""}
-                    onChange={(e) =>
-                      handleAlertChange(org, index, "notes", e.target.value)
-                    }
+                    onChange={(e) => handleAlertChange(org, index, "notes", e.target.value)}
                     className={inputClass}
                   />
                 </td>
@@ -161,11 +152,12 @@ export default function CheckpointForm({ onBackToDashboard }) {
           >
             🗑️ Delete Selected
           </button>
+
           {selectedRow && (
             <button
               type="button"
               className="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-3 py-1 rounded"
-              onClick={() => openEmailClient(selectedRow)}
+              onClick={() => openEmailClient(selectedRow, titleForEmail)}
             >
               📧 Email ({selectedRow.name})
             </button>
@@ -203,32 +195,26 @@ export default function CheckpointForm({ onBackToDashboard }) {
       </div>
 
       {formData[org].alertsGenerated === "yes" &&
-        renderAlertTable(formData[org].alerts, org)}
+        renderAlertTable(formData[org].alerts, org, title)}
     </div>
   );
 
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Checkpoint Checks</h1>
-<p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
-  This checklist is used to review and record any critical alerts detected within the Checkpoint Infinity Portal for both Panoptics Global Ltd and The Brewery.
-</p>
+      <p className="text-sm text-gray-700 text-center max-w-2xl mx-auto mb-6">
+        This checklist is used to review and record any critical alerts detected within the Checkpoint Infinity Portal for both Panoptics Global Ltd and The Brewery.
+      </p>
 
       <div className="bg-gray-50 border rounded px-4 py-3 text-sm shadow-sm mb-6">
-  <p className="font-semibold mb-1">Checkpoint Infinity Portal</p>
-  <div className="flex items-center gap-2">
-    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">URL</span>
-    <a
-      href="https://portal.checkpoint.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline break-all"
-    >
-      https://portal.checkpoint.com
-    </a>
-  </div>
-</div>
-
+        <p className="font-semibold mb-1">Checkpoint Infinity Portal</p>
+        <div className="flex items-center gap-2">
+          <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">URL</span>
+          <a href="https://portal.checkpoint.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+            https://portal.checkpoint.com
+          </a>
+        </div>
+      </div>
 
       {renderSection("Panoptics Global Ltd", "panoptics")}
       {renderSection("The Brewery", "brewery")}

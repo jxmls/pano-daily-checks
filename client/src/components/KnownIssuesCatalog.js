@@ -1,3 +1,4 @@
+// src/components/KnownIssuesCatalog.js
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import panopticsPdfLogo from "../assets/panopticspdflogo.png";
 
@@ -443,50 +444,6 @@ tr:nth-child(even) td{background:#fafafa}
 </div>
 </body></html>`;
 }
-function buildXlsHTML({ rows }) {
-  const esc = (s) =>
-    String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  const tableRows = rows
-    .map(
-      (r) => `
-    <tr>
-      <td>${esc(r.title)}</td>
-      <td>${esc((r.systems || []).join(" | "))}</td>
-      <td>${esc(r.summary || "")}</td>
-      <td>${esc(r.owner || "")}</td>
-      <td>${esc(r.acceptedUntil || "")}</td>
-      <td>${esc(r.lastReviewed || "")}</td>
-      <td>${esc(r.status || "")}</td>
-      <td>${esc(r.risk || "")}</td>
-    </tr>
-  `
-    )
-    .join("");
-  return `<!DOCTYPE html>
-<html><head><meta charset="utf-8" />
-<meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
-<title>Known Issues (XLS)</title>
-</head><body>
-<table border="1" cellspacing="0" cellpadding="4">
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Systems</th>
-      <th>Summary</th>
-      <th>Owner</th>
-      <th>Review date</th>
-      <th>Last reviewed</th>
-      <th>Status</th>
-      <th>Risk</th>
-    </tr>
-  </thead>
-  <tbody>${tableRows || `<tr><td colspan="8">No rows</td></tr>`}</tbody>
-</table>
-</body></html>`;
-}
 
 /* ---------- MAIN ---------- */
 export default function KnownIssuesCatalog({ onBackToDashboard }) {
@@ -682,14 +639,14 @@ export default function KnownIssuesCatalog({ onBackToDashboard }) {
     }
   };
 
-  // XLS (no branding/logo to avoid Excel image warning)
-  const exportXls = () => {
-    const html = buildXlsHTML({ rows: filtered });
-    const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  // CSV (simple, Excel-friendly)
+  const exportCsv = () => {
+    const csv = toCsv(filtered);
+    const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }); // BOM for Excel
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "known-issues.xls";
+    a.download = "known-issues.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -756,16 +713,15 @@ export default function KnownIssuesCatalog({ onBackToDashboard }) {
             </button>
 
             <button
-              onClick={exportXls}
+              onClick={exportCsv}
               className="inline-flex items-center gap-2 px-3.5 h-9 rounded-lg border hover:bg-gray-50"
-              title="Export to Excel"
+              title="Export CSV"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4h10v6h6v10H4z" />
-                <path d="M14 4v6h6" />
-                <path d="M7 15l5 5M12 15l-5 5" />
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 12h8M8 8h8M8 16h5" />
               </svg>
-              <span>Export XLS</span>
+              <span>Export CSV</span>
             </button>
 
             <button
@@ -916,7 +872,7 @@ export default function KnownIssuesCatalog({ onBackToDashboard }) {
                         copyLink(id);
                         setTimeout(() => setJustCopied(null), 1200);
                       }}
-                      onMarkReviewed={markReviewed} // keep payload if modal sends it
+                      onMarkReviewed={markReviewed}
                       onToggleStatus={(id, ns) => {
                         toggleStatus(id, ns);
                       }}

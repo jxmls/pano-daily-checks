@@ -4,21 +4,11 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
 import { openEmail } from "../utils/email";
+import { saveSubmission } from "../utils/SaveSubmission"; // ✅ persist to Admin Portal
 
 // Table row shape
-const defaultRow = {
-  alertType: "",
-  host: "",
-  details: "",
-  ticket: "",
-  notes: "",
-  selected: false,
-};
-
-// Build an empty alert bucket
-function emptyBucket() {
-  return { alert: "", rows: [], selectAll: false };
-}
+const defaultRow = { alertType: "", host: "", details: "", ticket: "", notes: "", selected: false };
+const emptyBucket = () => ({ alert: "", rows: [], selectAll: false });
 
 export default function useVmwareForm() {
   const [formData, setFormData] = useState({
@@ -34,17 +24,9 @@ export default function useVmwareForm() {
   });
 
   // ---------- mutation helpers ----------
-  /**
-   * handleChange(section, path, value)
-   *  - section can be "vsan" or null (for top-level: engineer/date)
-   *  - path is dot-notation under section, e.g. "alerts.clarion.alert"
-   */
   const handleChange = (section, path, value) => {
     setFormData((prev) => {
-      if (!section) {
-        // top-level
-        return { ...prev, [path]: value };
-      }
+      if (!section) return { ...prev, [path]: value }; // top-level (engineer/date)
       const clone = structuredClone ? structuredClone(prev) : JSON.parse(JSON.stringify(prev));
       const root = clone[section] || (clone[section] = {});
       const parts = path.split(".");
@@ -101,7 +83,7 @@ export default function useVmwareForm() {
     setFormData((prev) => {
       const clone = structuredClone ? structuredClone(prev) : JSON.parse(JSON.stringify(prev));
       const bucket = clone?.[section]?.alerts?.[key];
-      if (bucket) {
+    if (bucket) {
         const newVal = !bucket.selectAll;
         bucket.selectAll = newVal;
         bucket.rows = bucket.rows.map((r) => ({ ...r, selected: newVal }));
@@ -153,24 +135,32 @@ export default function useVmwareForm() {
     return lines.join("\n");
   }
 
-  // Also expose per-row helpers (used by the form’s “📧 Email” buttons)
-  const generateTicketSubject = (row) =>
-    encodeURIComponent(`VMware vSAN Alert: ${row.host || "Unknown Host"}`);
-
+  // ❗ plain strings (NO encodeURIComponent)
+  const generateTicketSubject = (row) => `VMware vSAN Alert: ${row.host || "Unknown Host"}`;
   const generateTicketBody = (row, key) => {
     const map = { clarion: "Clarion Events", panoptics: "Panoptics Global", volac: "Volac International" };
     const site = map[key] || key;
-    return encodeURIComponent(
+    return (
       `Site: ${site}\n` +
-        `Alert Type: ${row.alertType || "-"}\n` +
-        `vSphere Host: ${row.host || "-"}\n` +
-        `Details: ${row.details || "-"}\n` +
-        `Ticket: ${row.ticket || "-"}\n` +
-        `Notes: ${row.notes || "-"}\n`
+      `Alert Type: ${row.alertType || "-"}\n` +
+      `vSphere Host: ${row.host || "-"}\n` +
+      `Details: ${row.details || "-"}\n` +
+      `Ticket: ${row.ticket || "-"}\n` +
+      (row.notes ? `Notes: ${row.notes}\n` : "")
     );
   };
 
-  // ---------- PDF + openEmail (no download) ----------
+  // helper to decide pass/fail for this module submission
+  function sectionOK(bucket) {
+    if (bucket.alert === "no") return true;
+    if (bucket.alert === "yes") {
+      const rows = bucket.rows || [];
+      return rows.length > 0 && rows.every((r) => r.alertType && r.host && r.details);
+    }
+    return false; // unanswered
+  }
+
+  // ---------- PDF + openEmail (no download) + SAVE ----------
   const handleSubmit = () => {
     const engineer = formData.engineer || localStorage.getItem("engineerName") || "Unknown";
     const date = formData.date || localStorage.getItem("checkDate") || new Date().toISOString();
@@ -188,13 +178,8 @@ export default function useVmwareForm() {
       if (bucket.alert === "yes" && (bucket.rows || []).length) {
         autoTable(doc, {
           head: [["#", "Type", "vSphere Host", "Details", "Ticket", "Notes"]],
-          body: bucket.rows.map((r, i) => [
-            i + 1,
-            r.alertType || "",
-            r.host || "",
-            r.details || "",
-            r.ticket || "-",
-            r.notes || "-",
+          body: (bucket.rows || []).map((r, i) => [
+            i + 1, r.alertType || "", r.host || "", r.details || "", r.ticket || "-", r.notes || "-",
           ]),
           startY: y + 2,
           styles: { fontSize: 9 },
@@ -205,30 +190,43 @@ export default function useVmwareForm() {
       }
     };
 
-    drawSection("Clarion Events", formData.vsan.alerts.clarion);
-    drawSection("Panoptics Global", formData.vsan.alerts.panoptics);
-    drawSection("Volac International", formData.vsan.alerts.volac);
+    const buckets = formData.vsan.alerts;
+    drawSection("Clarion Events", buckets.clarion);
+    drawSection("Panoptics Global", buckets.panoptics);
+    drawSection("Volac International", buckets.volac);
 
     const initials = engineer.split(" ").map((n) => n[0]?.toUpperCase()).join("") || "XX";
     const safeDate = new Date(date);
     const fnDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
     const filename = `vmware-vsan-checklist-${initials}-${fnDate}.pdf`;
 
-    // Do NOT download — return to caller for Admin Portal; still generate data URL for future uses
-    const dataUrl = doc.output("datauristring");
+    const dataUrl = doc.output("datauristring"); // keep for Admin Portal preview
 
     // Open mail client with summary
     const subject = `VMware vSAN Daily Checklist - ${fnDate} - ${engineer}`;
     const body = buildVmwareEmailBody({ ...formData, engineer, date: fnDate });
     openEmail(subject, body);
 
+    // ✅ Save to Admin Portal
+    const passed =
+      sectionOK(buckets.clarion) &&
+      sectionOK(buckets.panoptics) &&
+      sectionOK(buckets.volac);
+
+    saveSubmission({
+
+  module: "vsan",
+   engineer,
+   passed,
+   meta: { clients: ["Clarion Events", "Panoptics Global", "Volac International"], notes: "Submitted from VmwareForm" },
+   payload: formData,
+  pdf: { name: filename, dataUrl },
+ });
+
     return { dataUrl, filename };
   };
 
-  // Keep a light validation here if needed by caller (component does its own gating)
-  useEffect(() => {
-    // you can add hook-level validation or side-effects here later if needed
-  }, [formData]);
+  useEffect(() => {}, [formData]);
 
   return {
     formData,

@@ -1,7 +1,16 @@
 // src/components/VmwareForm.js
 import React, { useEffect } from "react";
 import useVmwareForm from "../hooks/useVmwareForm";
-import { openEmail } from "../utils/email";
+import { openEmail } from "../utils/email"; // add this import
+
+// ...
+
+const openEmailClient = (row, key) => {
+  const subject = generateTicketSubject(row);      // plain
+  const body = generateTicketBody(row, key);       // plain
+  openEmail(subject, body);                        // centralised recipients + correct encoding
+};
+
 
 export default function VmwareForm({ onBackToDashboard }) {
   const {

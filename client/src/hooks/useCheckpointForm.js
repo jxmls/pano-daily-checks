@@ -1,221 +1,163 @@
+// src/hooks/useCheckpointForm.js
 import { useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
+import { openEmail } from "../utils/email";
+import { saveSubmission } from "../utils/SaveSubmission";
 
 export default function useCheckpointForm(onBackToDashboard) {
   const [formData, setFormData] = useState({
-    engineer: "",
-    date: "",
-    panoptics: {
-      alertsGenerated: "",
-      alerts: [],
-    },
-    brewery: {
-      alertsGenerated: "",
-      alerts: [],
-    },
-    selectAllPanoptics: false,
-    selectAllBrewery: false,
+    engineer: localStorage.getItem("engineerName") || "",
+    date: localStorage.getItem("checkDate") || "",
+    panoptics: { alertsGenerated: "", alerts: [], selectAll: false },
+    brewery:   { alertsGenerated: "", alerts: [], selectAll: false },
   });
 
   const handleChange = (section, field, value) => {
     if (field === null) {
-      setFormData((prev) => ({
-        ...prev,
-        [section]: value,
-      }));
+      setFormData((prev) => ({ ...prev, [section]: value }));
     } else {
       setFormData((prev) => ({
         ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value,
-        },
+        [section]: { ...prev[section], [field]: value },
       }));
     }
   };
 
   const handleAlertChange = (section, index, field, value) => {
-    const updatedAlerts = [...formData[section].alerts];
-    updatedAlerts[index][field] = value;
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        alerts: updatedAlerts,
-      },
-    }));
+    setFormData((prev) => {
+      const updated = { ...prev };
+      const rows = [...updated[section].alerts];
+      rows[index] = { ...rows[index], [field]: value };
+      updated[section] = { ...updated[section], alerts: rows };
+      return updated;
+    });
   };
 
   const addAlertRow = (section) => {
-    const updatedAlerts = [
-      ...formData[section].alerts,
-      {
-        severity: "",
-        name: "",
-        machine: "",
-        details: "",
-        ticket: "",
-        notes: "",
-        selected: false,
-      },
-    ];
     setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        alerts: updatedAlerts,
+        alerts: [
+          ...prev[section].alerts,
+          { severity: "", name: "", machine: "", details: "", ticket: "", notes: "", selected: false },
+        ],
       },
     }));
   };
 
   const toggleRowSelection = (section, index) => {
-    const updatedAlerts = [...formData[section].alerts];
-    updatedAlerts[index].selected = !updatedAlerts[index].selected;
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        alerts: updatedAlerts,
-      },
-    }));
+    setFormData((prev) => {
+      const updated = { ...prev };
+      const rows = [...updated[section].alerts];
+      rows[index] = { ...rows[index], selected: !rows[index].selected };
+      updated[section] = { ...updated[section], alerts: rows };
+      return updated;
+    });
   };
 
   const toggleSelectAll = (section) => {
-    const allSelected = !formData[`selectAll${capitalize(section)}`];
-    const updatedAlerts = formData[section].alerts.map((row) => ({
-      ...row,
-      selected: allSelected,
-    }));
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        alerts: updatedAlerts,
-      },
-      [`selectAll${capitalize(section)}`]: allSelected,
-    }));
+    setFormData((prev) => {
+      const updated = { ...prev };
+      const newVal = !updated[section].selectAll;
+      const rows = (updated[section].alerts || []).map((r) => ({ ...r, selected: newVal }));
+      updated[section] = { ...updated[section], alerts: rows, selectAll: newVal };
+      return updated;
+    });
   };
 
   const deleteSelectedRows = (section) => {
-    const updatedAlerts = formData[section].alerts.filter((row) => !row.selected);
     setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        alerts: updatedAlerts,
+        alerts: prev[section].alerts.filter((r) => !r.selected),
+        selectAll: false,
       },
     }));
   };
 
-  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  // 🔒 Validation logic
-  const isYes = (val) => val === "yes";
-
+  // ---------- validation helpers ----------
   const isValidAlert = (a) =>
-    a.severity?.trim() &&
-    a.name?.trim() &&
-    a.machine?.trim() &&
-    a.details?.trim(); // no longer require ticket
+    a.severity?.trim() && a.name?.trim() && a.machine?.trim() && a.details?.trim();
 
-  let isFormValid = true;
-  let validationMessage = "";
-
-  if (!formData.panoptics.alertsGenerated || !formData.brewery.alertsGenerated) {
-    isFormValid = false;
-    validationMessage =
-      "Please select whether alerts were generated for both Panoptics and The Brewery.";
-  } else if (isYes(formData.panoptics.alertsGenerated)) {
-    if (formData.panoptics.alerts.length === 0) {
-      isFormValid = false;
-      validationMessage = "Please add at least one alert row for Panoptics.";
-    } else if (!formData.panoptics.alerts.every(isValidAlert)) {
-      isFormValid = false;
-      validationMessage =
-        "All Panoptics alert rows must have Severity, Name, Machine, and Details filled.";
+  function sectionOK(sectionData) {
+    if (sectionData.alertsGenerated === "no") return true;
+    if (sectionData.alertsGenerated === "yes") {
+      const rows = sectionData.alerts || [];
+      return rows.length > 0 && rows.every(isValidAlert);
     }
+    return false; // unanswered
   }
 
-  if (isFormValid && isYes(formData.brewery.alertsGenerated)) {
-    if (formData.brewery.alerts.length === 0) {
-      isFormValid = false;
-      validationMessage = "Please add at least one alert row for The Brewery.";
-    } else if (!formData.brewery.alerts.every(isValidAlert)) {
-      isFormValid = false;
-      validationMessage =
-        "All Brewery alert rows must have Severity, Name, Machine, and Details filled.";
-    }
+  // Email body
+  function buildEmailBody(fd) {
+    const p = fd || {};
+    const lines = [];
+    const d = p.date || new Date().toISOString().slice(0, 10);
+
+    const sectionLines = (title, sec) => {
+      const arr = [];
+      arr.push(`— ${title} —`);
+      arr.push(`Alerts generated: ${sec.alertsGenerated || "N/A"}`);
+      if (sec.alertsGenerated === "yes") {
+        const rows = sec.alerts || [];
+        if (!rows.length) {
+          arr.push("No rows entered (but 'yes' selected).");
+        } else {
+          rows.forEach((a, i) => {
+            arr.push(
+              `#${i + 1} • [${a.severity || "-"}] ${a.name || "-"} | Machine: ${a.machine || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"}${a.notes ? " | Notes: " + a.notes : ""}`
+            );
+          });
+        }
+      } else {
+        arr.push("No alerts.");
+      }
+      arr.push("");
+      return arr;
+    };
+
+    lines.push("Checkpoint Daily Check");
+    lines.push(`Engineer: ${p.engineer || "Unknown"}`);
+    lines.push(`Date: ${d}`);
+    lines.push("");
+    lines.push(...sectionLines("Panoptics Global Ltd", p.panoptics || {}));
+    lines.push(...sectionLines("The Brewery", p.brewery || {}));
+    lines.push("— Meta —");
+    lines.push("This message was generated from the daily checks app.");
+    return lines.join("\n");
   }
 
-  const generateEmailBody = () => {
-    const { engineer, date, panoptics, brewery } = formData;
-
-    const formatAlerts = (alerts) =>
-      alerts
-        .map(
-          (a, i) =>
-            `${i + 1}. [${a.severity || "-"}] ${a.name || "Unnamed Alert"} | ${a.machine || "N/A"} | ${a.details || "No details"} | Ticket: ${
-              a.ticket || "N/A"
-            }`
-        )
-        .join("\n");
-
-    return `
-Checkpoint Daily Check
-
-Engineer: ${engineer || "Unknown"}
-Date: ${date || "Unknown"}
-
---- Panoptics ---
-Alerts Generated: ${panoptics.alertsGenerated || "N/A"}
-${formatAlerts(panoptics.alerts)}
-
---- The Brewery ---
-Alerts Generated: ${brewery.alertsGenerated || "N/A"}
-${formatAlerts(brewery.alerts)}
-    `.trim();
-  };
-
+  // ---------- PDF + email + save ----------
   const handleSubmit = () => {
-    const { engineer, date, panoptics, brewery } = formData;
-    const initials =
-      (engineer || "")
-        .split(" ")
-        .map((n) => n[0]?.toUpperCase())
-        .join("") || "XX";
-
-    const dateObj = new Date(date);
-    const formattedDate = !isNaN(dateObj)
-      ? dateObj.toISOString().split("T")[0]
-      : "unknown-date";
+    const engineer = formData.engineer || localStorage.getItem("engineerName") || "Unknown";
+    const date = formData.date || localStorage.getItem("checkDate") || new Date().toISOString();
 
     const doc = new jsPDF();
-    addHeader(doc, "Checkpoint Checklist", engineer, formattedDate);
+    addHeader(doc, "Checkpoint Checklist", engineer, date);
 
     const addSection = (title, alerts, startY) => {
       doc.setFontSize(12);
       doc.text(title, 14, startY);
 
       if (alerts.length > 0) {
-        const alertRows = alerts.map((a, idx) => [
-          idx + 1,
-          a.severity || "",
-          a.name || "",
-          a.machine || "",
-          a.details || "",
-          a.ticket || "",
-          a.notes || "",
-        ]);
-
         autoTable(doc, {
           head: [["#", "Severity", "Name", "Machine", "Details", "Ticket", "Notes"]],
-          body: alertRows,
+          body: alerts.map((a, idx) => [
+            idx + 1,
+            a.severity || "",
+            a.name || "",
+            a.machine || "",
+            a.details || "",
+            a.ticket || "",
+            a.notes || "",
+          ]),
           startY: startY + 8,
           styles: { fontSize: 9 },
         });
-
         return doc.lastAutoTable.finalY + 10;
       } else {
         doc.setFontSize(10);
@@ -224,20 +166,60 @@ ${formatAlerts(brewery.alerts)}
       }
     };
 
-    let nextY = addSection("Panoptics Check Point", panoptics.alerts, 50);
-    addSection("The Brewery Check Point", brewery.alerts, nextY);
+    let nextY = addSection("Panoptics Global Ltd", formData.panoptics.alerts, 50);
+    addSection("The Brewery", formData.brewery.alerts, nextY);
 
-    doc.save(`checkpoint-checklist-${initials}-${formattedDate}.pdf`);
+    const dataUrl = doc.output("datauristring");
+
+    const safeDate = new Date(date);
+    const fnDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
+    const subject = `Checkpoint Daily Check - ${fnDate} - ${engineer}`;
+    const body = buildEmailBody({ ...formData, engineer, date: fnDate });
+    openEmail(subject, body);
+
+    const passed = sectionOK(formData.panoptics) && sectionOK(formData.brewery);
+
+    const filename = `checkpoint-checklist-${(engineer || "XX")
+      .split(" ")
+      .map((n) => n[0]?.toUpperCase())
+      .join("") || "XX"}-${fnDate}.pdf`;
+
+    // ✅ Save for Admin Portal (localStorage) and API (dual-write)
+    saveSubmission({
+      module: "checkpoint",
+      engineer,
+      passed,
+      meta: { clients: ["Panoptics", "The Brewery"], notes: "Submitted from CheckpointForm" },
+      payload: formData,
+      pdf: { name: filename, dataUrl },
+    });
+
+    return { dataUrl, filename };
   };
 
   const handleFinalSubmit = () => {
-    if (isFormValid) {
-      handleSubmit();
-      if (typeof onBackToDashboard === "function") {
-        setTimeout(onBackToDashboard, 300);
-      }
+    const ok = sectionOK(formData.panoptics) && sectionOK(formData.brewery);
+    if (ok) {
+      const res = handleSubmit();
+      if (typeof onBackToDashboard === "function") setTimeout(onBackToDashboard, 200);
+      return res;
     }
+    return undefined;
   };
+
+  // expose validation state
+  let isFormValid = true;
+  let validationMessage = "";
+  if (!formData.panoptics.alertsGenerated || !formData.brewery.alertsGenerated) {
+    isFormValid = false;
+    validationMessage = "Please select whether alerts were generated for both Panoptics and The Brewery.";
+  } else if (formData.panoptics.alertsGenerated === "yes" && !sectionOK(formData.panoptics)) {
+    isFormValid = false;
+    validationMessage = "All Panoptics rows must include Severity, Name, Machine, and Details.";
+  } else if (formData.brewery.alertsGenerated === "yes" && !sectionOK(formData.brewery)) {
+    isFormValid = false;
+    validationMessage = "All Brewery rows must include Severity, Name, Machine, and Details.";
+  }
 
   return {
     formData,
@@ -250,6 +232,5 @@ ${formatAlerts(brewery.alerts)}
     handleFinalSubmit,
     isFormValid,
     validationMessage,
-    generateEmailBody,
   };
 }
