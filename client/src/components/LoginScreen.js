@@ -1,5 +1,7 @@
+// src/components/LoginScreen.js
 import React, { useState } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import RecipientsSettings from "./RecipientsSettings";
 
 export default function LoginScreen({ onLogin }) {
   const [engineer, setEngineer] = useState("");
@@ -7,12 +9,14 @@ export default function LoginScreen({ onLogin }) {
     const today = new Date();
     return today.toISOString().split("T")[0];
   });
-
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // NEW: toggle for Recipients settings modal
+  const [showRecipients, setShowRecipients] = useState(false);
 
   const handleLogin = () => {
     setError("");
@@ -34,18 +38,26 @@ export default function LoginScreen({ onLogin }) {
       localStorage.setItem("engineerName", engineer);
       localStorage.setItem("checkDate", date);
       onLogin(engineer, date);
-    }, 300); // Simulate loading delay
+    }, 300);
   };
 
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 bg-cover bg-center relative"
-      style={{
-        backgroundImage: `url(${require("../assets/background.jpg")})`,
-      }}
+      style={{ backgroundImage: `url(${require("../assets/background.jpg")})` }}
     >
       {/* Overlay */}
       <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
+
+      {/* Top-right Settings button (opens recipients modal) */}
+      <button
+        type="button"
+        className="absolute top-4 right-4 z-20 text-sm px-3 py-1 rounded bg-white/90 border hover:bg-white"
+        onClick={() => setShowRecipients(true)}
+        title="Email Recipients"
+      >
+        ✉️ Email Recipients
+      </button>
 
       {/* Login Box */}
       <div className="backdrop-blur-md bg-white/90 w-full max-w-sm sm:max-w-md rounded-xl shadow-xl p-6 relative z-10">
@@ -139,15 +151,18 @@ export default function LoginScreen({ onLogin }) {
             type="submit"
             disabled={loading}
             className={`w-full py-2 rounded text-white transition ${
-              loading
-                ? "bg-blue-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
       </div>
+
+      {/* Recipients Modal */}
+      {showRecipients && (
+        <RecipientsSettings onClose={() => setShowRecipients(false)} />
+      )}
     </div>
   );
 }
