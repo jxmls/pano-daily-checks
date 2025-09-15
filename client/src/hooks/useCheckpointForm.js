@@ -5,6 +5,7 @@ import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
 import { openEmail } from "../utils/email";
 import { saveSubmission } from "../utils/SaveSubmission";
+import { buildCheckpointEmailBody } from "../utils/emailBodies";
 
 export default function useCheckpointForm(onBackToDashboard) {
   const [formData, setFormData] = useState({
@@ -92,45 +93,6 @@ export default function useCheckpointForm(onBackToDashboard) {
     return false; // unanswered
   }
 
-  // Email body
-  function buildEmailBody(fd) {
-    const p = fd || {};
-    const lines = [];
-    const d = p.date || new Date().toISOString().slice(0, 10);
-
-    const sectionLines = (title, sec) => {
-      const arr = [];
-      arr.push(`— ${title} —`);
-      arr.push(`Alerts generated: ${sec.alertsGenerated || "N/A"}`);
-      if (sec.alertsGenerated === "yes") {
-        const rows = sec.alerts || [];
-        if (!rows.length) {
-          arr.push("No rows entered (but 'yes' selected).");
-        } else {
-          rows.forEach((a, i) => {
-            arr.push(
-              `#${i + 1} • [${a.severity || "-"}] ${a.name || "-"} | Machine: ${a.machine || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"}${a.notes ? " | Notes: " + a.notes : ""}`
-            );
-          });
-        }
-      } else {
-        arr.push("No alerts.");
-      }
-      arr.push("");
-      return arr;
-    };
-
-    lines.push("Checkpoint Daily Check");
-    lines.push(`Engineer: ${p.engineer || "Unknown"}`);
-    lines.push(`Date: ${d}`);
-    lines.push("");
-    lines.push(...sectionLines("Panoptics Global Ltd", p.panoptics || {}));
-    lines.push(...sectionLines("The Brewery", p.brewery || {}));
-    lines.push("— Meta —");
-    lines.push("This message was generated from the daily checks app.");
-    return lines.join("\n");
-  }
-
   // ---------- PDF + email + save ----------
   const handleSubmit = () => {
     const engineer = formData.engineer || localStorage.getItem("engineerName") || "Unknown";
@@ -174,7 +136,8 @@ export default function useCheckpointForm(onBackToDashboard) {
     const safeDate = new Date(date);
     const fnDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
     const subject = `Checkpoint Daily Check - ${fnDate} - ${engineer}`;
-    const body = buildEmailBody({ ...formData, engineer, date: fnDate });
+
+    const body = buildCheckpointEmailBody({ ...formData, engineer, date: fnDate });
     openEmail(subject, body);
 
     const passed = sectionOK(formData.panoptics) && sectionOK(formData.brewery);

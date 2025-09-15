@@ -1,12 +1,9 @@
 // src/components/VeeamForm.js
 import { useEffect } from "react";
 import useVeeamForm from "../hooks/useVeeamForm";
+import { openEmail } from "../utils/email";
 import { saveSubmission } from "../utils/SaveSubmission";
-import {
-  openEmailWithTargets,
-  EMAIL_LISTS,
-  buildVeeamRowBody,
-} from "../utils/composeEmail";
+import { buildVeeamRowBody } from "../utils/emailBodies";
 
 export default function VeeamForm({ onBackToDashboard }) {
   const {
@@ -46,7 +43,7 @@ export default function VeeamForm({ onBackToDashboard }) {
   const openEmailClient = (row) => {
     const subject = `Veeam Alert — ${row.vbrHost || "Host"} (${row.type || "Type"})`;
     const body = buildVeeamRowBody(row);
-    openEmailWithTargets(subject, body, EMAIL_LISTS.veeam);
+    openEmail(subject, body);
   };
 
   return (

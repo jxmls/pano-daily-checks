@@ -4,7 +4,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
 import { openEmail } from "../utils/email";
-import { saveSubmission } from "../utils/SaveSubmission"; // ✅ persist to Admin Portal
+import { saveSubmission } from "../utils/SaveSubmission";
+import { buildVmwareEmailBody } from "../utils/emailBodies";
 
 // Table row shape
 const defaultRow = { alertType: "", host: "", details: "", ticket: "", notes: "", selected: false };
@@ -83,7 +84,7 @@ export default function useVmwareForm() {
     setFormData((prev) => {
       const clone = structuredClone ? structuredClone(prev) : JSON.parse(JSON.stringify(prev));
       const bucket = clone?.[section]?.alerts?.[key];
-    if (bucket) {
+      if (bucket) {
         const newVal = !bucket.selectAll;
         bucket.selectAll = newVal;
         bucket.rows = bucket.rows.map((r) => ({ ...r, selected: newVal }));
@@ -92,50 +93,7 @@ export default function useVmwareForm() {
     });
   };
 
-  // ---------- email body builders ----------
-  function buildSectionLines(name, bucket) {
-    const lines = [];
-    const status = bucket?.alert || "N/A";
-    lines.push(`— ${name} —`);
-    lines.push(`Alerts generated: ${status}`);
-    if (status === "yes") {
-      const rows = bucket?.rows || [];
-      if (!rows.length) {
-        lines.push("No rows entered (but 'yes' selected).");
-      } else {
-        rows.forEach((r, i) => {
-          lines.push(
-            `#${i + 1} • ${r.alertType || "Type"} | Host: ${r.host || "-"} | Details: ${r.details || "-"} | Ticket: ${r.ticket || "-"} | Notes: ${r.notes || "-"}`
-          );
-        });
-      }
-    } else {
-      lines.push("No alerts.");
-    }
-    lines.push("");
-    return lines;
-  }
-
-  function buildVmwareEmailBody(fd) {
-    const p = fd || {};
-    const date = p.date || new Date().toISOString().slice(0, 10);
-
-    const lines = [];
-    lines.push("VMware vSAN Checklist");
-    lines.push(`Engineer: ${p.engineer || "Unknown"}`);
-    lines.push(`Date: ${date}`);
-    lines.push("");
-
-    lines.push(...buildSectionLines("Clarion Events", p.vsan?.alerts?.clarion));
-    lines.push(...buildSectionLines("Panoptics Global", p.vsan?.alerts?.panoptics));
-    lines.push(...buildSectionLines("Volac International", p.vsan?.alerts?.volac));
-
-    lines.push("— Meta —");
-    lines.push("This message was generated from the daily checks app.");
-    return lines.join("\n");
-  }
-
-  // ❗ plain strings (NO encodeURIComponent)
+  // ❗ plain strings (NO encodeURIComponent) for row tickets
   const generateTicketSubject = (row) => `VMware vSAN Alert: ${row.host || "Unknown Host"}`;
   const generateTicketBody = (row, key) => {
     const map = { clarion: "Clarion Events", panoptics: "Panoptics Global", volac: "Volac International" };
@@ -150,7 +108,7 @@ export default function useVmwareForm() {
     );
   };
 
-  // helper to decide pass/fail for this module submission
+  // helper to decide pass/fail for module submission
   function sectionOK(bucket) {
     if (bucket.alert === "no") return true;
     if (bucket.alert === "yes") {
@@ -195,7 +153,7 @@ export default function useVmwareForm() {
     drawSection("Panoptics Global", buckets.panoptics);
     drawSection("Volac International", buckets.volac);
 
-    const initials = engineer.split(" ").map((n) => n[0]?.toUpperCase()).join("") || "XX";
+    const initials = (engineer || "XX").split(" ").map((n) => n[0]?.toUpperCase()).join("") || "XX";
     const safeDate = new Date(date);
     const fnDate = isNaN(safeDate) ? "unknown-date" : safeDate.toISOString().split("T")[0];
     const filename = `vmware-vsan-checklist-${initials}-${fnDate}.pdf`;
@@ -214,14 +172,13 @@ export default function useVmwareForm() {
       sectionOK(buckets.volac);
 
     saveSubmission({
-
-  module: "vsan",
-   engineer,
-   passed,
-   meta: { clients: ["Clarion Events", "Panoptics Global", "Volac International"], notes: "Submitted from VmwareForm" },
-   payload: formData,
-  pdf: { name: filename, dataUrl },
- });
+      module: "vsan",
+      engineer,
+      passed,
+      meta: { clients: ["Clarion Events", "Panoptics Global", "Volac International"], notes: "Submitted from VmwareForm" },
+      payload: formData,
+      pdf: { name: filename, dataUrl },
+    });
 
     return { dataUrl, filename };
   };

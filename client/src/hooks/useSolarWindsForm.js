@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
 import { openEmail } from "../utils/email";
+import { buildSolarWindsEmailBody } from "../utils/emailBodies";
 
 // Format current local datetime for <input type="datetime-local">
 function nowLocalForInput() {
@@ -169,43 +170,6 @@ export default function useSolarWindsForm() {
     setValidationMessage("");
   };
 
-  // ----- Email body (plain text)
-  function buildSolarWindsEmailBody(fd) {
-    const s = (fd && fd.solarwinds) || {};
-    const engineer = fd.engineer || localStorage.getItem("engineerName") || "Unknown";
-    const date = fd.date || new Date().toISOString().slice(0, 10);
-
-    const lines = [];
-    lines.push("SolarWinds Daily Checklist");
-    lines.push(`Engineer: ${engineer}`);
-    lines.push(`Date: ${date}`);
-    lines.push("");
-    lines.push(`Services Running: ${s.servicesRunning || "N/A"}`);
-    if (String(s.servicesRunning).toLowerCase() === "no") {
-      lines.push(`Service Down Ticket: ${s.serviceDownTicket || "-"}`);
-    }
-    lines.push(`Client: ${s.client || "Multiple"}`);
-    lines.push(`Alerts Generated: ${s.alertsGenerated || "N/A"}`);
-
-    if (s.alertsGenerated === "yes" && Array.isArray(s.alerts) && s.alerts.length) {
-      lines.push("");
-      lines.push("Alerts:");
-      s.alerts.forEach((a, i) => {
-        lines.push(
-          `#${i + 1} • ${a.alertType || "Type"} | ${a.name || "Name"} | ${a.details || "-"} | Time: ${a.time || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
-        );
-      });
-    } else {
-      lines.push("");
-      lines.push("No alerts.");
-    }
-
-    lines.push("");
-    lines.push("— Meta —");
-    lines.push("This message was generated from the daily checks app.");
-    return lines.join("\n");
-  }
-
   // ----- PDF + Email (no download)
   const handleSubmit = () => {
     const solarwinds = formData.solarwinds || {};
@@ -267,8 +231,9 @@ export default function useSolarWindsForm() {
     return undefined;
   };
 
+  // Row-level helpers (plain strings; openEmail will encode)
   const generateTicketSubject = (alert) =>
-    encodeURIComponent(`SolarWinds Alert: ${alert.name}`);
+    `SolarWinds Alert: ${alert?.name || "Unnamed"}`;
 
   const generateTicketBody = (alert) => {
     const engineer =
@@ -276,11 +241,14 @@ export default function useSolarWindsForm() {
         ? formData.engineer
         : formData.engineer?.name || "Unknown";
 
-    return encodeURIComponent(
+    return (
       `Client: ${formData.solarwinds.client || "Multiple"}\n` +
-        `Alert Name: ${alert.name}\nDetails: ${alert.details}\n` +
-        `Alert Type: ${alert.alertType || "N/A"}\n` +
-        `Trigger Time: ${alert.time}\nAssign to: ${engineer}\nNotes: ${alert.notes}`
+      `Alert Name: ${alert?.name || "-"}\n` +
+      `Details: ${alert?.details || "-"}\n` +
+      `Alert Type: ${alert?.alertType || "N/A"}\n` +
+      `Trigger Time: ${alert?.time || "-"}\n` +
+      `Assign to: ${engineer}\n` +
+      (alert?.notes ? `Notes: ${alert.notes}\n` : "")
     );
   };
 

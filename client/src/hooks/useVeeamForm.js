@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { addHeader } from "../utils/pdfutils";
 import { openEmail } from "../utils/email";
+import { buildVeeamEmailBody } from "../utils/emailBodies";
 
 const defaultRow = {
   type: "",
@@ -133,48 +134,6 @@ const useVeeamForm = () => {
     setIsFormValid(true);
     setValidationMessage("");
   };
-
-  // -------- Email body
-  function buildVeeamEmailBody(fd) {
-    const p = fd || {};
-    const safeDate = p.date || new Date().toISOString().slice(0, 10);
-
-    const lines = [];
-    lines.push("Veeam Backup Checklist");
-    lines.push(`Engineer: ${p.engineer || "Unknown"}`);
-    lines.push(`Date: ${safeDate}`);
-    lines.push("");
-
-    lines.push("— Clarion Events —");
-    lines.push(`Alerts generated: ${p.alertsGenerated || "N/A"}`);
-    if (p.alertsGenerated === "yes" && Array.isArray(p.alerts) && p.alerts.length) {
-      p.alerts.forEach((a, i) => {
-        lines.push(
-          `#${i + 1} • ${a.type || "Type"} | Host: ${a.vbrHost || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
-        );
-      });
-    } else {
-      lines.push("No alerts.");
-    }
-    lines.push("");
-
-    lines.push("— Local Veeam —");
-    lines.push(`Alerts generated: ${p.localAlertsGenerated || "N/A"}`);
-    if (p.localAlertsGenerated === "yes" && Array.isArray(p.localAlerts) && p.localAlerts.length) {
-      p.localAlerts.forEach((a, i) => {
-        lines.push(
-          `#${i + 1} • ${a.type || "Type"} | Host: ${a.vbrHost || "-"} | Details: ${a.details || "-"} | Ticket: ${a.ticket || "-"} | Notes: ${a.notes || "-"}`
-        );
-      });
-    } else {
-      lines.push("No alerts.");
-    }
-
-    lines.push("");
-    lines.push("— Meta —");
-    lines.push("This message was generated from the daily checks app.");
-    return lines.join("\n");
-  }
 
   // -------- PDF + open email (no download)
   const handleSubmit = () => {

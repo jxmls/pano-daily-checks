@@ -1,11 +1,8 @@
 // src/components/CheckpointForm.js
 import React, { useEffect } from "react";
 import useCheckpointForm from "../hooks/useCheckpointForm";
-import {
-  openEmailWithTargets,
-  EMAIL_LISTS,
-  buildCheckpointRowBody,
-} from "../utils/composeEmail";
+import { openEmail } from "../utils/email";
+import { buildCheckpointRowBody } from "../utils/emailBodies";
 
 export default function CheckpointForm({ onBackToDashboard }) {
   const {
@@ -33,7 +30,7 @@ export default function CheckpointForm({ onBackToDashboard }) {
   const openEmailClient = (row, title) => {
     const subject = `Checkpoint Alert — ${title}: ${row.name || "Unnamed"}`;
     const body = buildCheckpointRowBody(row, title);
-    openEmailWithTargets(subject, body, EMAIL_LISTS.checkpoint);
+    openEmail(subject, body);
   };
 
   const renderAlertTable = (alerts, org, titleForEmail) => {

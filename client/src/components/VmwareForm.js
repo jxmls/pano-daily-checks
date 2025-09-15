@@ -1,11 +1,7 @@
 // src/components/VmwareForm.js
 import React, { useEffect } from "react";
 import useVmwareForm from "../hooks/useVmwareForm";
-import {
-  openEmailWithTargets,
-  EMAIL_LISTS,
-  formatEmail,
-} from "../utils/composeEmail";
+import { openEmail } from "../utils/email";
 
 export default function VmwareForm({ onBackToDashboard }) {
   const {
@@ -17,8 +13,8 @@ export default function VmwareForm({ onBackToDashboard }) {
     deleteSelectedRows,
     toggleSelectAll,
     handleSubmit,
-    generateTicketBody,      // existing (used for PDF etc.)
-    generateTicketSubject,   // existing
+    generateTicketBody,      // used for PDF etc. in hook
+    generateTicketSubject,   // plain string subject
   } = useVmwareForm();
 
   const isSubmissionReady = () => {
@@ -54,24 +50,19 @@ export default function VmwareForm({ onBackToDashboard }) {
   }, []);
 
   const openEmailClient = (row, key) => {
-    const subject = decodeURIComponent(generateTicketSubject(row));
-    // Build a pretty plain-text body for mailto (independent of PDF body)
-    const body = formatEmail({
-      title: `VMware vSAN — ${key.toUpperCase()}`,
-      sections: [{
-        heading: "Alert",
-        lines: [
-          `Severity: ${row.alertType || "–"}`,
-          `Host: ${row.host || "–"}`,
-          `Details: ${row.details || "–"}`,
-          `Ticket: ${row.ticket || "–"}`,
-          ...(row.notes ? [`Notes: ${row.notes}`] : []),
-        ],
-      }],
-    });
-    openEmailWithTargets(subject, body, EMAIL_LISTS.vmware);
+    const subject = generateTicketSubject(row); // already plain
+    const siteMap = { clarion: "Clarion Events", panoptics: "Panoptics Global", volac: "Volac International" };
+    const body =
+      `Site: ${siteMap[key] || key}\n` +
+      `Alert Type: ${row.alertType || "-"}\n` +
+      `vSphere Host: ${row.host || "-"}\n` +
+      `Details: ${row.details || "-"}\n` +
+      `Ticket: ${row.ticket || "-"}\n` +
+      (row.notes ? `Notes: ${row.notes}\n` : "");
+    openEmail(subject, body);
   };
 
+  // Table renderer
   const renderTable = (key) => {
     const rows = formData.vsan?.alerts?.[key]?.rows || [];
     return (
@@ -158,8 +149,20 @@ export default function VmwareForm({ onBackToDashboard }) {
         </table>
 
         <div className="flex gap-4 mt-4 flex-wrap">
-          <button type="button" onClick={() => addAlertRow("vsan", key)} className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded">➕ Add Row</button>
-          <button type="button" onClick={() => deleteSelectedRows("vsan", key)} className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded">🗑️ Delete Selected</button>
+          <button
+            type="button"
+            onClick={() => addAlertRow("vsan", key)}
+            className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded"
+          >
+            ➕ Add Row
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteSelectedRows("vsan", key)}
+            className="bg-red-100 hover:bg-red-200 text-red-700 text-sm px-3 py-1 rounded"
+          >
+            🗑️ Delete Selected
+          </button>
 
           {rows
             .filter((r) => r.selected && r.alertType && r.host && r.details)
