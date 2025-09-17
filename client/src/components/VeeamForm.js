@@ -5,6 +5,16 @@ import { openEmail } from "../utils/email";
 import { saveSubmission } from "../utils/SaveSubmission";
 import { buildVeeamRowBody } from "../utils/emailBodies";
 
+const clarion = Array.isArray(payload?.alerts) ? payload.alerts : [];
+const local   = Array.isArray(payload?.localAlerts) ? payload.localAlerts : [];
+// existing inserts...
+await mirrorToSubmissions({
+  date, module: "veeam", engineer,
+  hasAlerts: (clarion.length + local.length) > 0,
+  payload
+});
+return res.json({ ok: true });
+
 export default function VeeamForm({ onBackToDashboard }) {
   const {
     formData,

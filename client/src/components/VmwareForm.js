@@ -3,6 +3,14 @@ import React, { useEffect } from "react";
 import useVmwareForm from "../hooks/useVmwareForm";
 import { openEmail } from "../utils/email";
 
+const vsan = payload?.vsan || {};
+const vsanClient = vsan?.client || vsan?.selectedClient || "Multiple";
+const vsanAlert  = String(vsan?.alertsGenerated || "").toLowerCase() === "yes";
+// existing update/insert + per-client rollups...
+await mirrorToSubmissions({ date, module: "vsan", engineer, hasAlerts: vsanAlert, payload });
+return res.json({ ok: true });
+
+
 export default function VmwareForm({ onBackToDashboard }) {
   const {
     formData,

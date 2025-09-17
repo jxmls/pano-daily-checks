@@ -2,6 +2,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import useSolarWindsForm from "../hooks/useSolarWindsForm";
 import { saveSubmission } from "../utils/SaveSubmission";
+const solarClient = payload?.solarwinds?.client || "Multiple";
+const solarAlert  = String(payload?.solarwinds?.alertsGenerated || "").toLowerCase() === "yes";
+// existing update/insert...
+await mirrorToSubmissions({ date, module: "solarwinds", engineer, hasAlerts: solarAlert, payload });
+return res.json({ ok: true });
+
 
 /* ---------- helpers for datetime handling ---------- */
 function pad(n) { return String(n).padStart(2, "0"); }

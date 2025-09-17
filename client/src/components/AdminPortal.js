@@ -3,6 +3,8 @@ import {
   loadSubmissions,
   loadCompliance,
   saveCompliance,
+  saveAll,
+  fetchAllFromServer,        // ← NEW
   REQUIRED_MODULES,
 } from "../lib/storage";
 import { startOfLocalDay, endOfLocalDay, toISODate } from "../lib/dates";
@@ -37,9 +39,30 @@ export default function AdminPortal({ onBackToDashboard }) {
   const [archiveFrom, setArchiveFrom] = useState("");
   const [archiveTo, setArchiveTo] = useState("");
 
+  const [loading, setLoading] = useState(true);  // ← NEW
+
   const pageSize = 10;
 
-  useEffect(() => setAll(loadSubmissions()), []);
+  // Load submissions: try API first, fall back to local
+  useEffect(() => {
+    (async () => {
+      try {
+        const serverRows = await fetchAllFromServer(); // GET /api/all
+        if (Array.isArray(serverRows) && serverRows.length) {
+          setAll(serverRows);
+          try { saveAll(serverRows); } catch {}
+        } else {
+          setAll(loadSubmissions());
+        }
+      } catch {
+        setAll(loadSubmissions());
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Load compliance notes/acks from local
   useEffect(() => setCompliance(loadCompliance()), []);
 
   // today tiles
@@ -133,10 +156,7 @@ export default function AdminPortal({ onBackToDashboard }) {
       acknowledged: r.ack ? "yes" : "no",
       note: r.note || "",
     }));
-    downloadCsv(
-      `daily_compliance_view_${toISODate(new Date())}.csv`,
-      rows
-    );
+    downloadCsv(`daily_compliance_view_${toISODate(new Date())}.csv`, rows);
   }
 
   // quick filters (toggle + clear)
@@ -399,10 +419,7 @@ export default function AdminPortal({ onBackToDashboard }) {
           <section className="mb-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <KpiCard label="Total submissions" value={filtered.length} />
-              <KpiCard
-                label="Pass rate (days)"
-                value={`${dayAgg.passRate}%`}
-              />
+              <KpiCard label="Pass rate (days)" value={`${dayAgg.passRate}%`} />
               <KpiCard label="Days passed" value={dayAgg.passDays} />
               <KpiCard label="Days failed" value={dayAgg.failDays} />
             </div>
@@ -413,18 +430,25 @@ export default function AdminPortal({ onBackToDashboard }) {
           </section>
 
           {/* Daily compliance summary */}
-          <ComplianceSummary
-            rows={summaryRows}
-            quick={quick}
-            from={from}
-            to={to}
-            clearQuick={clearQuick}
-            onArchive={() => setShowArchive(true)}
-            onExport={exportSummaryView}
-            jumpToDay={jumpToDay}
-            toggleAck={toggleAck}
-            addNote={addNote}
-          />
+          <div id="compliance-summary">
+            <ComplianceSummary
+              rows={summaryRows}
+              quick={quick}
+              from={from}
+              to={to}
+              clearQuick={clearQuick}
+              onArchive={() => setShowArchive(true)}
+              onExport={exportSummaryView}
+              jumpToDay={jumpToDay}
+              toggleAck={toggleAck}
+              addNote={addNote}
+            />
+          </div>
+
+          {/* Loading hint (small) */}
+          {loading && (
+            <div className="text-xs text-gray-500 mb-2">Loading data…</div>
+          )}
 
           <SubmissionsTable
             paged={paged}
@@ -459,9 +483,7 @@ export default function AdminPortal({ onBackToDashboard }) {
               <div>
                 <h3 className="font-semibold">Submission Details</h3>
                 <p className="text-xs text-gray-500">
-                  {inspect.module} •{" "}
-                  {new Date(inspect.createdAt).toLocaleString()} •{" "}
-                  {inspect.engineer}
+                  {inspect.module} • {new Date(inspect.createdAt).toLocaleString()} • {inspect.engineer}
                 </p>
               </div>
               <div className="flex items-center gap-2">

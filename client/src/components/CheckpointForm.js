@@ -3,6 +3,20 @@ import React, { useEffect } from "react";
 import useCheckpointForm from "../hooks/useCheckpointForm";
 import { openEmail } from "../utils/email";
 import { buildCheckpointRowBody } from "../utils/emailBodies";
+const p = payload?.panoptics;
+const b = payload?.brewery;
+const anyYes = [p?.alertsGenerated, b?.alertsGenerated]
+  .map(x => String(x||"").toLowerCase()).includes("yes");
+const anyRows = (Array.isArray(p?.alerts) && p.alerts.length) ||
+                (Array.isArray(b?.alerts) && b.alerts.length);
+// existing inserts...
+await mirrorToSubmissions({
+  date, module: "checkpoint", engineer,
+  hasAlerts: !!(anyYes || anyRows),
+  payload
+});
+return res.json({ ok: true });
+
 
 export default function CheckpointForm({ onBackToDashboard }) {
   const {
