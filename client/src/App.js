@@ -1,4 +1,6 @@
+// src/App.js
 import React, { useState } from "react";
+
 import LoginScreen from "./components/LoginScreen";
 import Dashboard from "./components/Dashboard";
 import SolarWindsForm from "./components/SolarWindsForm";
@@ -9,7 +11,7 @@ import ProjectBoard from "./components/projectboard/ProjectBoard";
 import VeeamForm from "./components/VeeamForm";
 import KnownIssuesCatalog from "./components/KnownIssuesCatalog";
 import AdminPortal from "./components/AdminPortal";
-
+import FloatingSettingsButton from "./components/FloatingSettingsButton";
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -22,8 +24,12 @@ export default function App() {
     setScreen("dashboard");
   };
 
-  const handleSelectModule = (module) => {
-    setScreen(module);
+  const handleSelectModule = (module) => setScreen(module);
+
+  const handleSignOut = () => {
+    setAuthenticated(false);
+    setUserData({});
+    setScreen("splash");
   };
 
   return (
@@ -32,11 +38,7 @@ export default function App() {
         showHome={authenticated && screen !== "dashboard"}
         showSignOut={authenticated && screen === "dashboard"}
         onBackToDashboard={() => setScreen("dashboard")}
-        onSignOut={() => {
-          setAuthenticated(false);
-          setUserData({});
-          setScreen("splash");
-        }}
+        onSignOut={handleSignOut}
         engineer={userData.engineer}
       />
 
@@ -73,11 +75,13 @@ export default function App() {
           <ProjectBoard onBackToDashboard={() => setScreen("dashboard")} />
         ) : screen === "KnownIssues" ? (
           <KnownIssuesCatalog onBackToDashboard={() => setScreen("dashboard")} />
-          ) : screen === "admin" ? (
-  <AdminPortal onBackToDashboard={() => setScreen("dashboard")} />
-
+        ) : screen === "admin" ? (
+          <AdminPortal onBackToDashboard={() => setScreen("dashboard")} />
         ) : null}
       </div>
+
+      {/* Floating settings gear lives globally */}
+      <FloatingSettingsButton />
     </div>
   );
 }
