@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Submission {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  module    String
+  engineer  String
+  checkDate String
+  passed    Boolean
+  payload   Json
+  pdfName   String?
+}
+
+model KnownIssue {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  title          String
+  systems        String[]
+  summary        String
+  workaroundUrl  String?
+  owner          String   @default("Infra")
+  acceptedUntil  String?
+  lastReviewed   DateTime @default(now())
+  lastReviewedBy String?
+  reviewHistory  Json     @default("[]")
+  status         String   @default("active")
+  risk           String   @default("low")
+}
