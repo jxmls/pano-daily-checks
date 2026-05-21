@@ -2,8 +2,6 @@
 
 import type { AuthMode } from "@/types";
 
-const REQUIRED_PASSWORD = process.env.NEXT_PUBLIC_LOCAL_PASSWORD ?? "HotFix991!";
-
 export function getAuthMode(): AuthMode {
   const env = (process.env.NEXT_PUBLIC_AUTH_MODE ?? "local").toLowerCase();
   const url = typeof window !== "undefined"
@@ -17,7 +15,16 @@ export function getAuthMode(): AuthMode {
 export async function localLogin(engineer: string, password: string): Promise<string> {
   if (!engineer.trim()) throw new Error("Please enter your name.");
   if (!password) throw new Error("Please enter the password.");
-  if (password !== REQUIRED_PASSWORD) throw new Error("Incorrect password.");
+
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? "Sign-in failed.");
+
   return engineer.trim();
 }
 

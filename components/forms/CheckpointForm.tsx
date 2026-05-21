@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useCheckpointForm } from "@/hooks/useCheckpointForm";
@@ -8,10 +8,11 @@ import { openEmail } from "@/utils/email";
 import { buildCheckpointEmailBody } from "@/utils/emailBodies";
 import { addHeader, safeDate, initials as getInitials } from "@/utils/pdf";
 import { saveSubmission } from "@/utils/saveSubmission";
-import { RadioGroup, AlertTable, SectionCard, ValidationBanner, PageHeader } from "@/components/ui";
+import { RadioGroup, AlertTable, SectionCard, SubmitBar, PageHeader } from "@/components/ui";
+import { useToast } from "@/context/toast";
 import type { CheckpointAlertRow } from "@/types";
 
-interface Props { engineer: string; date: string; }
+interface Props { engineer: string; date: string; onSubmitSuccess?: () => void; }
 
 type SectionKey = "panoptics" | "brewery";
 
@@ -20,8 +21,10 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "brewery",   label: "The Brewery" },
 ];
 
-export default function CheckpointForm({ engineer, date }: Props) {
+export default function CheckpointForm({ engineer, date, onSubmitSuccess }: Props) {
   const f = useCheckpointForm();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     f.setField("engineer", engineer);
@@ -30,35 +33,45 @@ export default function CheckpointForm({ engineer, date }: Props) {
   }, [engineer, date]);
 
   const handleSubmit = async () => {
-    if (!f.isFormValid) return;
-    const fd = f.formData;
-    const doc = new jsPDF();
-    addHeader(doc, "Checkpoint Daily Checklist", engineer, date);
-    let y = 52;
-    doc.setFontSize(10);
+    if (!f.isFormValid || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const fd = f.formData;
+      const doc = new jsPDF();
+      addHeader(doc, "Checkpoint Daily Checklist", engineer, date);
+      let y = 52;
+      doc.setFontSize(10);
 
-    const drawSection = (title: string, alerts: CheckpointAlertRow[]) => {
-      doc.text(title, 14, y); y += 5;
-      if (alerts.length > 0) {
-        autoTable(doc, {
-          head: [["#", "Severity", "Name", "Machine", "Details", "Ticket", "Notes"]],
-          body: alerts.map((a, i) => [i + 1, a.severity, a.name, a.machine, a.details, a.ticket || "-", a.notes || "-"]),
-          startY: y + 2, styles: { fontSize: 8 },
-        });
-        // @ts-expect-error jspdf-autotable extends jsPDF
-        y = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-      } else {
-        doc.text("No alerts.", 14, y); y += 8;
-      }
-    };
+      const drawSection = (title: string, alerts: CheckpointAlertRow[]) => {
+        doc.text(title, 14, y); y += 5;
+        if (alerts.length > 0) {
+          autoTable(doc, {
+            head: [["#", "Severity", "Name", "Machine", "Details", "Ticket", "Notes"]],
+            body: alerts.map((a, i) => [i + 1, a.severity, a.name, a.machine, a.details, a.ticket || "-", a.notes || "-"]),
+            startY: y + 2, styles: { fontSize: 8 },
+          });
+          // @ts-expect-error jspdf-autotable extends jsPDF
+          y = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+        } else {
+          doc.text("No alerts.", 14, y); y += 8;
+        }
+      };
 
-    drawSection("Panoptics Global Ltd", fd.panoptics.alerts);
-    drawSection("The Brewery", fd.brewery.alerts);
+      drawSection("Panoptics Global Ltd", fd.panoptics.alerts);
+      drawSection("The Brewery", fd.brewery.alerts);
 
-    const fnDate = safeDate(date);
-    const pdfName = `checkpoint-${getInitials(engineer)}-${fnDate}.pdf`;
-    await saveSubmission({ module: "checkpoint", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd, pdfName });
-    openEmail(`Checkpoint Daily Check - ${fnDate} - ${engineer}`, buildCheckpointEmailBody(fd));
+      const fnDate = safeDate(date);
+      const pdfName = `checkpoint-${getInitials(engineer)}-${fnDate}.pdf`;
+      doc.save(pdfName);
+      await saveSubmission({ module: "checkpoint", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd, pdfName });
+      openEmail(`Checkpoint Daily Check - ${fnDate} - ${engineer}`, buildCheckpointEmailBody(fd));
+      onSubmitSuccess?.();
+      toast("Checkpoint check submitted — PDF downloaded", "success");
+    } catch {
+      toast("Failed to submit. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const makeCols = (section: SectionKey) => [
@@ -86,7 +99,7 @@ export default function CheckpointForm({ engineer, date }: Props) {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-32">
       <PageHeader title="Checkpoint Checks" subtitle="Per-site firewall alert review" />
 
       {SECTIONS.map(({ key, label }) => {
@@ -115,11 +128,12 @@ export default function CheckpointForm({ engineer, date }: Props) {
         );
       })}
 
-      <ValidationBanner message={f.validationMessage} valid={f.isFormValid} />
-
-      <button onClick={handleSubmit} disabled={!f.isFormValid} className="btn-primary">
-        Submit &amp; Send Email
-      </button>
+      <SubmitBar
+        isValid={f.isFormValid}
+        message={f.isFormValid ? "Form complete — ready to submit" : f.validationMessage}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }

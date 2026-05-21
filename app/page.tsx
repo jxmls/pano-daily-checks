@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import type { Screen, SessionUser } from "@/types";
+import { useState, useEffect } from "react";
+import type { Screen, SessionUser, Submission } from "@/types";
 import LoginScreen from "@/components/LoginScreen";
-import Header from "@/components/Header";
+import Sidebar from "@/components/Sidebar";
+import Dashboard from "@/components/Dashboard";
 import SolarWindsForm from "@/components/forms/SolarWindsForm";
 import VeeamForm from "@/components/forms/VeeamForm";
 import VmwareForm from "@/components/forms/VmwareForm";
 import CheckpointForm from "@/components/forms/CheckpointForm";
 import KnownIssuesCatalog from "@/components/KnownIssuesCatalog";
 import AdminPortal from "@/components/admin/AdminPortal";
-import SettingsButton from "@/components/SettingsButton";
 
-const DEFAULT_SCREEN: Screen = "solarwinds";
+const DEFAULT_SCREEN: Screen = "dashboard";
 
 export default function Home() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [screen, setScreen] = useState<Screen>(DEFAULT_SCREEN);
+  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
 
   const handleLogin = (name: string, checkDate: string) => {
     setUser({ name, checkDate });
@@ -26,36 +27,80 @@ export default function Home() {
   const handleSignOut = () => {
     setUser(null);
     setScreen(DEFAULT_SCREEN);
+    setCompletedToday(new Set());
   };
 
+  const handleSubmitSuccess = (module: string) => {
+    setCompletedToday((prev) => new Set(Array.from(prev).concat(module)));
+  };
+
+  useEffect(() => {
+    if (!user) { setCompletedToday(new Set()); return; }
+    fetch("/api/submissions")
+      .then((r) => r.json())
+      .then((subs: Submission[]) => {
+        setCompletedToday(new Set(
+          subs
+            .filter((s: Submission) => s.checkDate === user.checkDate)
+            .map((s: Submission) => s.module)
+        ));
+      })
+      .catch(() => {});
+  }, [user]);
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
+    <div className="flex min-h-screen">
+      <Sidebar
         user={user}
         screen={screen}
         onSelectScreen={setScreen}
-        onSignOut={user ? handleSignOut : undefined}
+        onSignOut={handleSignOut}
+        completedToday={completedToday}
       />
-
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
-        {!user ? (
-          <LoginScreen onLogin={handleLogin} />
-        ) : screen === "solarwinds" ? (
-          <SolarWindsForm engineer={user.name} date={user.checkDate} />
-        ) : screen === "vsan" ? (
-          <VmwareForm engineer={user.name} date={user.checkDate} />
-        ) : screen === "veeam" ? (
-          <VeeamForm engineer={user.name} date={user.checkDate} />
-        ) : screen === "checkpoint" ? (
-          <CheckpointForm engineer={user.name} date={user.checkDate} />
-        ) : screen === "knownissues" ? (
-          <KnownIssuesCatalog />
-        ) : screen === "admin" ? (
-          <AdminPortal />
-        ) : null}
+      <main style={{ marginLeft: 220, flex: 1, minHeight: "100vh", overflowY: "auto" }}>
+        <div className="max-w-5xl mx-auto px-6 py-8 pb-32">
+          {screen === "dashboard" ? (
+            <Dashboard
+              engineer={user.name}
+              checkDate={user.checkDate}
+              completedToday={completedToday}
+              onSelectScreen={setScreen}
+            />
+          ) : screen === "solarwinds" ? (
+            <SolarWindsForm
+              engineer={user.name}
+              date={user.checkDate}
+              onSubmitSuccess={() => handleSubmitSuccess("solarwinds")}
+            />
+          ) : screen === "vsan" ? (
+            <VmwareForm
+              engineer={user.name}
+              date={user.checkDate}
+              onSubmitSuccess={() => handleSubmitSuccess("vsan")}
+            />
+          ) : screen === "veeam" ? (
+            <VeeamForm
+              engineer={user.name}
+              date={user.checkDate}
+              onSubmitSuccess={() => handleSubmitSuccess("veeam")}
+            />
+          ) : screen === "checkpoint" ? (
+            <CheckpointForm
+              engineer={user.name}
+              date={user.checkDate}
+              onSubmitSuccess={() => handleSubmitSuccess("checkpoint")}
+            />
+          ) : screen === "knownissues" ? (
+            <KnownIssuesCatalog engineer={user.name} />
+          ) : screen === "admin" ? (
+            <AdminPortal />
+          ) : null}
+        </div>
       </main>
-
-      {user && <SettingsButton />}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useSolarWindsForm } from "@/hooks/useSolarWindsForm";
@@ -8,39 +8,54 @@ import { openEmail } from "@/utils/email";
 import { buildSolarWindsEmailBody } from "@/utils/emailBodies";
 import { addHeader, safeDate, initials as getInitials } from "@/utils/pdf";
 import { saveSubmission } from "@/utils/saveSubmission";
-import { RadioGroup, AlertTable, SectionCard, ValidationBanner, PageHeader } from "@/components/ui";
+import { RadioGroup, AlertTable, SectionCard, SubmitBar, PageHeader } from "@/components/ui";
+import { useToast } from "@/context/toast";
 import type { SolarWindsAlertRow } from "@/types";
 
-interface Props { engineer: string; date: string; }
+interface Props { engineer: string; date: string; onSubmitSuccess?: () => void; }
 
 const inputCls = "input text-xs py-2";
 
-export default function SolarWindsForm({ engineer, date }: Props) {
+export default function SolarWindsForm({ engineer, date, onSubmitSuccess }: Props) {
   const f = useSolarWindsForm();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => { f.setField("engineer", engineer); f.setField("date", date); }, [engineer, date]); // eslint-disable-line
 
   const handleSubmit = async () => {
-    if (!f.isFormValid) return;
-    const fd = f.formData; const s = fd.solarwinds;
-    const doc = new jsPDF();
-    addHeader(doc, "SolarWinds Daily Checklist", engineer, date);
-    let y = 52;
-    doc.setFontSize(10);
-    doc.text(`Services Running: ${s.servicesRunning}`, 14, y); y += 6;
-    if (s.servicesRunning === "no") { doc.text(`Service Down Ticket: ${s.serviceDownTicket || "-"}`, 14, y); y += 6; }
-    doc.text(`Client: ${s.client || "Multiple"}`, 14, y); y += 6;
-    doc.text(`Alerts Generated: ${s.alertsGenerated}`, 14, y); y += 6;
-    if (s.alertsGenerated === "yes" && s.alerts.length > 0) {
-      autoTable(doc, {
-        head: [["#", "Type", "Name", "Details", "Time", "Ticket", "Notes"]],
-        body: s.alerts.map((a, i) => [i+1, a.alertType, a.name, a.details, a.time, a.ticket||"-", a.notes||"-"]),
-        startY: y + 3, styles: { fontSize: 8 },
-        headStyles: { fillColor: [0, 130, 130] },
-      });
+    if (!f.isFormValid || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const fd = f.formData; const s = fd.solarwinds;
+      const doc = new jsPDF();
+      addHeader(doc, "SolarWinds Daily Checklist", engineer, date);
+      let y = 52;
+      doc.setFontSize(10);
+      doc.text(`Services Running: ${s.servicesRunning}`, 14, y); y += 6;
+      if (s.servicesRunning === "no") { doc.text(`Service Down Ticket: ${s.serviceDownTicket || "-"}`, 14, y); y += 6; }
+      doc.text(`Client: ${s.client || "Multiple"}`, 14, y); y += 6;
+      doc.text(`Alerts Generated: ${s.alertsGenerated}`, 14, y); y += 6;
+      if (s.alertsGenerated === "yes" && s.alerts.length > 0) {
+        autoTable(doc, {
+          head: [["#", "Type", "Name", "Details", "Time", "Ticket", "Notes"]],
+          body: s.alerts.map((a, i) => [i+1, a.alertType, a.name, a.details, a.time, a.ticket||"-", a.notes||"-"]),
+          startY: y + 3, styles: { fontSize: 8 },
+          headStyles: { fillColor: [0, 130, 130] },
+        });
+      }
+      const fnDate = safeDate(date);
+      const pdfName = `solarwinds-${getInitials(engineer)}-${fnDate}.pdf`;
+      doc.save(pdfName);
+      await saveSubmission({ module: "solarwinds", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd, pdfName });
+      openEmail(`SolarWinds Daily Checklist - ${fnDate} - ${engineer}`, buildSolarWindsEmailBody(fd));
+      onSubmitSuccess?.();
+      toast("SolarWinds check submitted — PDF downloaded", "success");
+    } catch {
+      toast("Failed to submit. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
-    const fnDate = safeDate(date);
-    await saveSubmission({ module: "solarwinds", engineer, checkDate: fnDate, passed: true, payload: fd });
-    openEmail(`SolarWinds Daily Checklist - ${fnDate} - ${engineer}`, buildSolarWindsEmailBody(fd));
   };
 
   const cols = [
@@ -67,7 +82,7 @@ export default function SolarWindsForm({ engineer, date }: Props) {
   const s = f.formData.solarwinds;
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div className="space-y-5 max-w-5xl pb-32">
       <PageHeader title="SolarWinds Checks" subtitle={`Engineer: ${engineer} · ${date}`} />
 
       <SectionCard title="Service Status">
@@ -100,11 +115,12 @@ export default function SolarWindsForm({ engineer, date }: Props) {
         )}
       </SectionCard>
 
-      <ValidationBanner message={f.validationMessage} valid={f.isFormValid} />
-
-      <button onClick={handleSubmit} disabled={!f.isFormValid} className="btn-primary px-7 py-3 text-sm">
-        Submit &amp; Send Email
-      </button>
+      <SubmitBar
+        isValid={f.isFormValid}
+        message={f.isFormValid ? "Form complete — ready to submit" : f.validationMessage}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }

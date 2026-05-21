@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3002/)",
+      "PowerShell(Stop-Process *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3003/)",
+      "Bash(curl -s -o /dev/null -w \"app: %{http_code}\\\\n\" http://localhost:3004/)",
+      "Bash(curl -s -w 'login API: %{http_code}\\\\n' -X POST http://localhost:3004/api/auth/login -H 'Content-Type: application/json' -d '{\"password\":\"HotFix991!\"}' -o /tmp/login_resp.json)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -w '\\\\nbad password API: %{http_code}\\\\n' -X POST http://localhost:3004/api/auth/login -H 'Content-Type: application/json' -d '{\"password\":\"wrong\"}' -o /tmp/bad_resp.json)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3005/)",
+      "Bash(curl -s -X POST http://localhost:3005/api/auth/login -H 'Content-Type: application/json' -d '{\"password\":\"HotFix991!\"}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3005/api/known-issues)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3005/api/submissions)",
+      "Bash(git remote *)",
+      "Bash(git add *)"
+    ]
+  }
+}

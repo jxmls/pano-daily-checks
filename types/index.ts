@@ -141,6 +141,7 @@ export interface SessionUser {
 // ─── Nav ───────────────────────────────────────────────────────────────────
 
 export type Screen =
+  | "dashboard"
   | "solarwinds"
   | "vsan"
   | "veeam"

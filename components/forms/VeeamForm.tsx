@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useVeeamForm } from "@/hooks/useVeeamForm";
@@ -8,10 +8,11 @@ import { openEmail } from "@/utils/email";
 import { buildVeeamEmailBody } from "@/utils/emailBodies";
 import { addHeader, safeDate, initials as getInitials } from "@/utils/pdf";
 import { saveSubmission } from "@/utils/saveSubmission";
-import { RadioGroup, AlertTable, SectionCard, ValidationBanner, PageHeader } from "@/components/ui";
+import { RadioGroup, AlertTable, SectionCard, SubmitBar, PageHeader } from "@/components/ui";
+import { useToast } from "@/context/toast";
 import type { VeeamAlertRow } from "@/types";
 
-interface Props { engineer: string; date: string; }
+interface Props { engineer: string; date: string; onSubmitSuccess?: () => void; }
 
 function makeAlertCols(onUpdate: (i: number, f: keyof VeeamAlertRow, v: string) => void) {
   return [
@@ -33,8 +34,10 @@ function makeAlertCols(onUpdate: (i: number, f: keyof VeeamAlertRow, v: string) 
   ];
 }
 
-export default function VeeamForm({ engineer, date }: Props) {
+export default function VeeamForm({ engineer, date, onSubmitSuccess }: Props) {
   const f = useVeeamForm();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     f.setField("engineer", engineer);
@@ -43,38 +46,47 @@ export default function VeeamForm({ engineer, date }: Props) {
   }, [engineer, date]);
 
   const handleSubmit = async () => {
-    if (!f.isFormValid) return;
-    const fd = f.formData;
+    if (!f.isFormValid || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const fd = f.formData;
 
-    const doc = new jsPDF();
-    addHeader(doc, "Veeam Backup Checklist", engineer, date);
-    let y = 52;
-    doc.setFontSize(10);
+      const doc = new jsPDF();
+      addHeader(doc, "Veeam Backup Checklist", engineer, date);
+      let y = 52;
+      doc.setFontSize(10);
 
-    const drawSection = (title: string, alertsGenerated: string, alerts: VeeamAlertRow[]) => {
-      doc.text(title, 14, y); y += 5;
-      doc.text(`Alerts generated: ${alertsGenerated || "N/A"}`, 14, y); y += 3;
-      if (alertsGenerated === "yes" && alerts.length > 0) {
-        autoTable(doc, {
-          head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
-          body: alerts.map((a, i) => [i + 1, a.type, a.vbrHost, a.details, a.ticket || "-", a.notes || "-"]),
-          startY: y + 2, styles: { fontSize: 8 },
-        });
-        // @ts-expect-error jspdf-autotable extends jsPDF
-        y = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-      } else {
-        doc.text("No alerts.", 14, y); y += 8;
-      }
-    };
+      const drawSection = (title: string, alertsGenerated: string, alerts: VeeamAlertRow[]) => {
+        doc.text(title, 14, y); y += 5;
+        doc.text(`Alerts generated: ${alertsGenerated || "N/A"}`, 14, y); y += 3;
+        if (alertsGenerated === "yes" && alerts.length > 0) {
+          autoTable(doc, {
+            head: [["#", "Type", "VBR Host", "Details", "Ticket", "Notes"]],
+            body: alerts.map((a, i) => [i + 1, a.type, a.vbrHost, a.details, a.ticket || "-", a.notes || "-"]),
+            startY: y + 2, styles: { fontSize: 8 },
+          });
+          // @ts-expect-error jspdf-autotable extends jsPDF
+          y = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+        } else {
+          doc.text("No alerts.", 14, y); y += 8;
+        }
+      };
 
-    drawSection("Clarion Events", fd.alertsGenerated, fd.alerts);
-    drawSection("Local Veeam", fd.localAlertsGenerated, fd.localAlerts);
+      drawSection("Clarion Events", fd.alertsGenerated, fd.alerts);
+      drawSection("Local Veeam", fd.localAlertsGenerated, fd.localAlerts);
 
-    const fnDate = safeDate(date);
-    const pdfName = `veeam-${getInitials(engineer)}-${fnDate}.pdf`;
-
-    await saveSubmission({ module: "veeam", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd, pdfName });
-    openEmail(`Veeam Daily Checklist - ${fnDate} - ${engineer}`, buildVeeamEmailBody(fd));
+      const fnDate = safeDate(date);
+      const pdfName = `veeam-${getInitials(engineer)}-${fnDate}.pdf`;
+      doc.save(pdfName);
+      await saveSubmission({ module: "veeam", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd, pdfName });
+      openEmail(`Veeam Daily Checklist - ${fnDate} - ${engineer}`, buildVeeamEmailBody(fd));
+      onSubmitSuccess?.();
+      toast("Veeam check submitted — PDF downloaded", "success");
+    } catch {
+      toast("Failed to submit. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const fd = f.formData;
@@ -82,7 +94,7 @@ export default function VeeamForm({ engineer, date }: Props) {
   const localCols = makeAlertCols(f.updateLocalAlert);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-32">
       <PageHeader title="Veeam Backup Checks" subtitle="Clarion and local VBR alert review" />
 
       <SectionCard title="Clarion Events — Veeam Backup">
@@ -117,11 +129,12 @@ export default function VeeamForm({ engineer, date }: Props) {
         )}
       </SectionCard>
 
-      <ValidationBanner message={f.validationMessage} valid={f.isFormValid} />
-
-      <button onClick={handleSubmit} disabled={!f.isFormValid} className="btn-primary">
-        Submit &amp; Send Email
-      </button>
+      <SubmitBar
+        isValid={f.isFormValid}
+        message={f.isFormValid ? "Form complete — ready to submit" : f.validationMessage}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }

@@ -4,14 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PlusIcon, PencilIcon, TrashIcon, CheckIcon } from "@heroicons/react/24/outline";
 import type { KnownIssue } from "@/types";
 
-const LOCAL_KEY = "pano.knownIssues.v1";
-
-function loadLocal(): KnownIssue[] {
-  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) ?? "[]") ?? []; } catch { return []; }
-}
-function saveLocal(items: KnownIssue[]) {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(items));
-}
+interface Props { engineer: string; }
 
 const blank = (): Omit<KnownIssue, "id" | "createdAt" | "updatedAt"> => ({
   title: "", systems: [], summary: "", workaroundUrl: "", owner: "Infra",
@@ -37,52 +30,136 @@ function StatusBadge({ status }: { status: string }) {
     : <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Retired</span>;
 }
 
-export default function KnownIssuesCatalog() {
+export default function KnownIssuesCatalog({ engineer }: Props) {
   const [issues, setIssues] = useState<KnownIssue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [editing, setEditing] = useState<Partial<KnownIssue> & { id?: string } | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "retired">("active");
-  const engineer = typeof window !== "undefined" ? localStorage.getItem("engineerName") ?? "Engineer" : "Engineer";
 
-  useEffect(() => { setIssues(loadLocal()); }, []);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/known-issues");
+      if (!res.ok) throw new Error("Failed to load known issues");
+      setIssues(await res.json());
+    } catch {
+      setError("Could not load known issues. Check your database connection.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const save = useCallback((items: KnownIssue[]) => { setIssues(items); saveLocal(items); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const openNew = () => { setEditing(blank()); setIsNew(true); };
   const openEdit = (issue: KnownIssue) => { setEditing({ ...issue }); setIsNew(false); };
 
-  const commitEdit = () => {
-    if (!editing?.title?.trim()) return;
-    const now = new Date().toISOString();
-    if (isNew) {
-      const item: KnownIssue = {
-        ...blank(), ...editing,
-        id: crypto.randomUUID(), createdAt: now, updatedAt: now,
-        reviewHistory: [],
-      };
-      save([item, ...issues]);
-    } else {
-      save(issues.map((i) => i.id === editing.id ? { ...i, ...editing, updatedAt: now } : i));
+  const commitEdit = async () => {
+    if (!editing?.title?.trim() || saving) return;
+    setSaving(true);
+    try {
+      if (isNew) {
+        const res = await fetch("/api/known-issues", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: editing.title ?? "",
+            systems: editing.systems ?? [],
+            summary: editing.summary ?? "",
+            workaroundUrl: editing.workaroundUrl || null,
+            owner: editing.owner ?? "Infra",
+            acceptedUntil: editing.acceptedUntil || null,
+            lastReviewedBy: editing.lastReviewedBy ?? null,
+            reviewHistory: [],
+            status: editing.status ?? "active",
+            risk: editing.risk ?? "low",
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to create");
+        const issue: KnownIssue = await res.json();
+        setIssues((prev) => [issue, ...prev]);
+      } else {
+        const res = await fetch(`/api/known-issues/${editing.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editing),
+        });
+        if (!res.ok) throw new Error("Failed to update");
+        const issue: KnownIssue = await res.json();
+        setIssues((prev) => prev.map((i) => i.id === issue.id ? issue : i));
+      }
+      setEditing(null);
+    } catch {
+      setError("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    setEditing(null);
   };
 
-  const markReviewed = (id: string) => {
+  const markReviewed = async (id: string) => {
+    if (saving) return;
+    setSaving(true);
     const now = new Date().toISOString();
-    save(issues.map((i) => i.id === id ? {
-      ...i, lastReviewed: now, lastReviewedBy: engineer,
-      reviewHistory: [...(i.reviewHistory ?? []), { at: now, by: engineer }],
-      updatedAt: now,
-    } : i));
+    const issue = issues.find((i) => i.id === id);
+    if (!issue) { setSaving(false); return; }
+    try {
+      const res = await fetch(`/api/known-issues/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lastReviewed: now,
+          lastReviewedBy: engineer,
+          reviewHistory: [...(issue.reviewHistory ?? []), { at: now, by: engineer }],
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      const updated: KnownIssue = await res.json();
+      setIssues((prev) => prev.map((i) => i.id === id ? updated : i));
+    } catch {
+      setError("Failed to mark as reviewed.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleStatus = (id: string) => {
-    save(issues.map((i) => i.id === id ? { ...i, status: i.status === "active" ? "retired" : "active", updatedAt: new Date().toISOString() } : i));
+  const toggleStatus = async (id: string) => {
+    if (saving) return;
+    setSaving(true);
+    const issue = issues.find((i) => i.id === id);
+    if (!issue) { setSaving(false); return; }
+    const newStatus = issue.status === "active" ? "retired" : "active";
+    try {
+      const res = await fetch(`/api/known-issues/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      const updated: KnownIssue = await res.json();
+      setIssues((prev) => prev.map((i) => i.id === id ? updated : i));
+    } catch {
+      setError("Failed to update status.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteIssue = (id: string) => {
-    if (!confirm("Delete this known issue?")) return;
-    save(issues.filter((i) => i.id !== id));
+  const deleteIssue = async (id: string) => {
+    if (!confirm("Delete this known issue?") || saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/known-issues/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setIssues((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      setError("Failed to delete issue.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const active = issues.filter((i) => i.status === "active");
@@ -103,6 +180,12 @@ export default function KnownIssuesCatalog() {
         <button onClick={openNew} className="btn-primary gap-1"><PlusIcon className="h-4 w-4" /> New issue</button>
       </div>
 
+      {error && (
+        <p className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium">
+          {error}
+        </p>
+      )}
+
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-gray-200">
         {(["active", "retired", "all"] as const).map((f) => (
@@ -115,10 +198,11 @@ export default function KnownIssuesCatalog() {
 
       {/* Issue list */}
       <div className="space-y-3">
-        {shown.length === 0 && (
+        {loading ? (
+          <p className="text-center text-gray-400 py-12">Loading…</p>
+        ) : shown.length === 0 ? (
           <p className="text-center text-gray-400 py-12">No issues in this view.</p>
-        )}
-        {shown.map((issue) => {
+        ) : shown.map((issue) => {
           const days = daysFromNow(issue.acceptedUntil);
           const reviewDue = days < 0;
           const reviewSoon = days >= 0 && days <= 7;
@@ -152,17 +236,17 @@ export default function KnownIssuesCatalog() {
                   </p>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => markReviewed(issue.id)} title="Mark reviewed" className="btn-secondary px-2 py-1.5">
+                  <button onClick={() => markReviewed(issue.id)} title="Mark reviewed" className="btn-secondary px-2 py-1.5" disabled={saving}>
                     <CheckIcon className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => openEdit(issue)} title="Edit" className="btn-secondary px-2 py-1.5">
+                  <button onClick={() => openEdit(issue)} title="Edit" className="btn-secondary px-2 py-1.5" disabled={saving}>
                     <PencilIcon className="h-3.5 w-3.5" />
                   </button>
                   <button onClick={() => toggleStatus(issue.id)} title={issue.status === "active" ? "Retire" : "Re-activate"}
-                    className="btn-secondary px-2 py-1.5 text-xs">
+                    className="btn-secondary px-2 py-1.5 text-xs" disabled={saving}>
                     {issue.status === "active" ? "Retire" : "Activate"}
                   </button>
-                  <button onClick={() => deleteIssue(issue.id)} title="Delete" className="btn-danger px-2 py-1.5">
+                  <button onClick={() => deleteIssue(issue.id)} title="Delete" className="btn-danger px-2 py-1.5" disabled={saving}>
                     <TrashIcon className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -241,7 +325,9 @@ export default function KnownIssuesCatalog() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <button onClick={commitEdit} className="btn-primary flex-1">Save</button>
+              <button onClick={commitEdit} disabled={saving} className="btn-primary flex-1">
+                {saving ? "Saving…" : "Save"}
+              </button>
               <button onClick={() => setEditing(null)} className="btn-secondary flex-1">Cancel</button>
             </div>
           </div>

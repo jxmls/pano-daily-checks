@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useVmwareForm } from "@/hooks/useVmwareForm";
@@ -8,10 +8,11 @@ import { openEmail } from "@/utils/email";
 import { buildVmwareEmailBody } from "@/utils/emailBodies";
 import { addHeader, safeDate, initials as getInitials } from "@/utils/pdf";
 import { saveSubmission } from "@/utils/saveSubmission";
-import { RadioGroup, AlertTable, SectionCard, ValidationBanner, PageHeader } from "@/components/ui";
+import { RadioGroup, AlertTable, SectionCard, SubmitBar, PageHeader } from "@/components/ui";
+import { useToast } from "@/context/toast";
 import type { VmwareAlertRow, VmwareOrg } from "@/types";
 
-interface Props { engineer: string; date: string; }
+interface Props { engineer: string; date: string; onSubmitSuccess?: () => void; }
 
 const ORG_LABELS: Record<VmwareOrg, string> = {
   clarion: "Clarion Events",
@@ -21,8 +22,10 @@ const ORG_LABELS: Record<VmwareOrg, string> = {
 
 const ORGS: VmwareOrg[] = ["clarion", "panoptics", "volac"];
 
-export default function VmwareForm({ engineer, date }: Props) {
+export default function VmwareForm({ engineer, date, onSubmitSuccess }: Props) {
   const f = useVmwareForm();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     f.setField("engineer", engineer);
@@ -31,33 +34,44 @@ export default function VmwareForm({ engineer, date }: Props) {
   }, [engineer, date]);
 
   const handleSubmit = async () => {
-    if (!f.isFormValid) return;
-    const fd = f.formData;
-    const doc = new jsPDF();
-    addHeader(doc, "VMware vSAN Checklist", engineer, date);
-    let y = 52;
-    doc.setFontSize(10);
+    if (!f.isFormValid || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const fd = f.formData;
+      const doc = new jsPDF();
+      addHeader(doc, "VMware vSAN Checklist", engineer, date);
+      let y = 52;
+      doc.setFontSize(10);
 
-    ORGS.forEach((org) => {
-      const bucket = fd.vsan.alerts[org];
-      doc.text(ORG_LABELS[org], 14, y); y += 5;
-      doc.text(`Alerts generated: ${bucket.alert || "N/A"}`, 14, y); y += 3;
-      if (bucket.alert === "yes" && bucket.rows.length > 0) {
-        autoTable(doc, {
-          head: [["#", "Type", "vSphere Host", "Details", "Ticket", "Notes"]],
-          body: bucket.rows.map((r, i) => [i + 1, r.alertType, r.host, r.details, r.ticket || "-", r.notes || "-"]),
-          startY: y + 2, styles: { fontSize: 8 },
-        });
-        // @ts-expect-error jspdf-autotable extends jsPDF
-        y = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-      } else {
-        doc.text("No alerts.", 14, y); y += 8;
-      }
-    });
+      ORGS.forEach((org) => {
+        const bucket = fd.vsan.alerts[org];
+        doc.text(ORG_LABELS[org], 14, y); y += 5;
+        doc.text(`Alerts generated: ${bucket.alert || "N/A"}`, 14, y); y += 3;
+        if (bucket.alert === "yes" && bucket.rows.length > 0) {
+          autoTable(doc, {
+            head: [["#", "Type", "vSphere Host", "Details", "Ticket", "Notes"]],
+            body: bucket.rows.map((r, i) => [i + 1, r.alertType, r.host, r.details, r.ticket || "-", r.notes || "-"]),
+            startY: y + 2, styles: { fontSize: 8 },
+          });
+          // @ts-expect-error jspdf-autotable extends jsPDF
+          y = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+        } else {
+          doc.text("No alerts.", 14, y); y += 8;
+        }
+      });
 
-    const fnDate = safeDate(date);
-    await saveSubmission({ module: "vsan", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd });
-    openEmail(`VMware vSAN Checklist - ${fnDate} - ${engineer}`, buildVmwareEmailBody(fd));
+      const fnDate = safeDate(date);
+      const pdfName = `vsan-${getInitials(engineer)}-${fnDate}.pdf`;
+      doc.save(pdfName);
+      await saveSubmission({ module: "vsan", engineer, checkDate: fnDate, passed: f.isFormValid, payload: fd, pdfName });
+      openEmail(`VMware vSAN Checklist - ${fnDate} - ${engineer}`, buildVmwareEmailBody(fd));
+      onSubmitSuccess?.();
+      toast("VMware vSAN check submitted — PDF downloaded", "success");
+    } catch {
+      toast("Failed to submit. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const makeCols = (org: VmwareOrg) => [
@@ -79,7 +93,7 @@ export default function VmwareForm({ engineer, date }: Props) {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-32">
       <PageHeader title="VMware vSAN Checks" subtitle="Per-site alert review" />
 
       {ORGS.map((org) => {
@@ -108,15 +122,12 @@ export default function VmwareForm({ engineer, date }: Props) {
         );
       })}
 
-      {!f.isFormValid && (
-        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-          ⚠ Answer all site sections before submitting.
-        </p>
-      )}
-
-      <button onClick={handleSubmit} disabled={!f.isFormValid} className="btn-primary">
-        Submit &amp; Send Email
-      </button>
+      <SubmitBar
+        isValid={f.isFormValid}
+        message={f.isFormValid ? "Form complete — ready to submit" : "Answer all site alert questions before submitting."}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }

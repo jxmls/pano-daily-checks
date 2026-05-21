@@ -155,3 +155,9 @@
     background: white;
   }
 }
+
+@keyframes toast-slide {
+  from { opacity: 0; transform: translateX(0.75rem); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.toast-slide { animation: toast-slide 0.2s ease-out; }

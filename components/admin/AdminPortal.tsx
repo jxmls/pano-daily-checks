@@ -5,7 +5,6 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import type { Submission } from "@/types";
 import { KpiCard, StatusPill, PageHeader } from "@/components/ui";
 
-const LOCAL_KEY = "pano.submissions.v1";
 const MODULES = ["solarwinds", "vsan", "veeam", "checkpoint"];
 
 const MODULE_COLORS: Record<string, { bg: string; color: string }> = {
@@ -32,6 +31,8 @@ function fmtDate(iso: string) {
 
 export default function AdminPortal() {
   const [all, setAll] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [moduleFilter, setModuleFilter] = useState("all");
   const [engineerFilter, setEngineerFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -41,7 +42,15 @@ export default function AdminPortal() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
 
-  useEffect(() => { setAll(JSON.parse(localStorage.getItem(LOCAL_KEY) ?? "[]")); }, []);
+  useEffect(() => {
+    setLoading(true);
+    setError("");
+    fetch("/api/submissions")
+      .then((r) => { if (!r.ok) throw new Error("Failed to fetch"); return r.json(); })
+      .then((data: Submission[]) => setAll(data))
+      .catch(() => setError("Could not load submissions. Check your database connection."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const engineers = useMemo(() =>
     Array.from(new Set(all.map((s) => s.engineer).filter(Boolean))).sort(), [all]);
@@ -66,24 +75,18 @@ export default function AdminPortal() {
   const todayAll = all.filter((s) => s.createdAt.startsWith(todayStr));
   const todayPassed = todayAll.filter((s) => s.passed);
 
-  const clearAll = () => {
-    if (!confirm("Clear ALL local submission data?")) return;
-    localStorage.removeItem(LOCAL_KEY);
-    setAll([]);
-  };
-
   return (
     <div className="space-y-6 max-w-6xl">
       <PageHeader
         title="Admin Portal"
         subtitle="Submission history and daily compliance"
-        action={
-          <button onClick={clearAll}
-            className="btn-danger text-xs py-2 px-4">
-            Clear local data
-          </button>
-        }
       />
+
+      {error && (
+        <p className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium">
+          {error}
+        </p>
+      )}
 
       {/* Today's module completion */}
       <div>
@@ -116,7 +119,7 @@ export default function AdminPortal() {
         <KpiCard label="Today's submissions" value={todayAll.length} accent />
         <KpiCard label="Passed today" value={todayPassed.length}
           sub={todayAll.length > 0 ? `${Math.round(todayPassed.length / todayAll.length * 100)}% pass rate` : undefined} />
-        <KpiCard label="All time" value={all.length} sub="stored locally" />
+        <KpiCard label="All time" value={all.length} sub="stored in database" />
       </div>
 
       {/* Filters */}
@@ -172,7 +175,13 @@ export default function AdminPortal() {
             </tr>
           </thead>
           <tbody>
-            {paged.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="table-td py-16 text-center font-medium" style={{ color: "#9bb5b5" }}>
+                  Loading…
+                </td>
+              </tr>
+            ) : paged.length === 0 ? (
               <tr>
                 <td colSpan={6} className="table-td py-16 text-center font-medium"
                   style={{ color: "#9bb5b5" }}>

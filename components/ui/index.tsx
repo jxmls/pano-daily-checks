@@ -274,3 +274,58 @@ export function KpiCard({
     </div>
   );
 }
+
+// ─── SubmitBar ────────────────────────────────────────────────────────────────
+
+export function SubmitBar({
+  isValid,
+  message,
+  onSubmit,
+  isSubmitting = false,
+  label = "Submit & Send Email",
+}: {
+  isValid: boolean;
+  message: string;
+  onSubmit: () => void;
+  isSubmitting?: boolean;
+  label?: string;
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 220,
+        right: 0,
+        background: "white",
+        borderTop: "1.5px solid rgba(0,130,130,0.10)",
+        boxShadow: "0 -4px 20px rgba(0,0,0,0.06)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "12px 24px",
+        zIndex: 30,
+        gap: 16,
+      }}
+    >
+      {/* Validation message */}
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        {isValid
+          ? <CheckCircleIcon className="h-5 w-5 text-emerald-500 shrink-0" />
+          : <ExclamationTriangleIcon className="h-5 w-5 text-amber-500 shrink-0" />}
+        <span style={{ color: isValid ? "#059669" : "#d97706" }}>{message}</span>
+      </div>
+
+      {/* Submit button */}
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={!isValid || isSubmitting}
+        className="btn-primary"
+        style={{ whiteSpace: "nowrap" }}
+      >
+        {isSubmitting ? "Submitting…" : label}
+      </button>
+    </div>
+  );
+}
