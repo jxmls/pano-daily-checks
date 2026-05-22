@@ -98,12 +98,18 @@ export default function ProjectBoard({ engineer }: Props) {
 
   // ── Column operations ──────────────────────────────────────────
   const handleAddColumn = async () => {
-    const res = await fetch("/api/board/columns", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "New Column" }),
-    });
-    const col = await res.json();
-    setColumns((prev) => [...prev, col]);
+    try {
+      const res = await fetch("/api/board/columns", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "New Column" }),
+      });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const col = await res.json();
+      setColumns((prev) => [...prev, { ...col, cards: col.cards ?? [] }]);
+    } catch (err) {
+      console.error("Add column failed:", err);
+      setError("Failed to add column — check the database connection.");
+    }
   };
 
   const handleRenameColumn = async (id: string, name: string) => {
@@ -144,7 +150,11 @@ export default function ProjectBoard({ engineer }: Props) {
 
   const handleCardCreated = (card: BoardCard) => {
     setColumns((prev) =>
-      prev.map((c) => c.id === card.columnId ? { ...c, cards: [...c.cards, card] } : c)
+      prev.map((c) =>
+        c.id === card.columnId
+          ? { ...c, cards: [...(c.cards ?? []), { ...card, comments: card.comments ?? [] }] }
+          : c
+      )
     );
   };
 

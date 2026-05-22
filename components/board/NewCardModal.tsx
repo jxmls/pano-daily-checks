@@ -43,8 +43,9 @@ export default function NewCardModal({ columns, defaultColumnId, engineer, onClo
           labels: [],
         }),
       });
+      if (!res.ok) throw new Error(`API ${res.status}`);
       const card = await res.json();
-      onCreate(card);
+      onCreate({ ...card, comments: card.comments ?? [] });
       onClose();
     } catch {
       setError("Failed to create card. Try again.");

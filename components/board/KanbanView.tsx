@@ -161,7 +161,7 @@ export default function KanbanView({
     <DragDropContext onDragEnd={onDragEnd}>
       <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 12, alignItems: "flex-start" }}>
         {columns.map((col, colIdx) => {
-          const filtered = filterCards(col.cards);
+          const filtered = filterCards(col.cards ?? []);
           return (
             <div key={col.id} style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column" }}>
 
