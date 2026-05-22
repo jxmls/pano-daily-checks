@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { EyeIcon, EyeSlashIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { getAuthMode, localLogin, msalLogin } from "@/utils/auth";
 
-interface Props { onLogin: () => void; }
+interface Props { onLogin: (username: string) => void; }
 
 function LogoMark() {
   return (
@@ -45,7 +45,7 @@ export default function LoginScreen({ onLogin }: Props) {
     setLoading(true);
     try {
       await localLogin(username, password);
-      onLogin();
+      onLogin(username);
     } catch (e: unknown) {
       setError((e as Error).message ?? "Sign-in failed.");
     } finally {
@@ -58,7 +58,7 @@ export default function LoginScreen({ onLogin }: Props) {
     setLoading(true);
     try {
       await msalLogin(username || "");
-      onLogin();
+      onLogin(username || "");
     } catch (e: unknown) {
       setError((e as Error).message ?? "SSO failed.");
     } finally {

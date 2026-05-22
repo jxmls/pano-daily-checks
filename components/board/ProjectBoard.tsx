@@ -159,25 +159,28 @@ export default function ProjectBoard({ engineer }: Props) {
   };
 
   const handleCardUpdate = (cardId: string, patch: Partial<BoardCard>) => {
-    setColumns((prev) =>
-      prev.map((col) => {
-        const hasCard = col.cards.some((c) => c.id === cardId);
-        const newColumnId = (patch as BoardCard).columnId;
+    setColumns((prev) => {
+      const newColumnId = (patch as Partial<BoardCard>).columnId;
+      const originalCard = prev.flatMap((c) => c.cards).find((c) => c.id === cardId);
+      const isMoving = newColumnId && originalCard && newColumnId !== originalCard.columnId;
 
-        if (newColumnId && newColumnId !== col.id) {
-          // Card moved to another column
-          if (hasCard) return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
-          if (col.id === newColumnId) {
-            const updated = { ...col.cards.find((c) => c.id === cardId)!, ...patch };
-            return { ...col, cards: [...col.cards, updated] };
+      if (isMoving) {
+        return prev.map((col) => {
+          if (col.id === originalCard!.columnId) {
+            return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
           }
-        }
-        return {
-          ...col,
-          cards: col.cards.map((c) => c.id === cardId ? { ...c, ...patch } : c),
-        };
-      })
-    );
+          if (col.id === newColumnId) {
+            return { ...col, cards: [...col.cards, { ...originalCard!, ...patch }] };
+          }
+          return col;
+        });
+      }
+
+      return prev.map((col) => ({
+        ...col,
+        cards: col.cards.map((c) => c.id === cardId ? { ...c, ...patch } : c),
+      }));
+    });
     setSelectedCard((prev) => (prev?.id === cardId ? { ...prev, ...patch } : prev));
   };
 
