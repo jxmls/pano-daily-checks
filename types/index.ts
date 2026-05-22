@@ -147,4 +147,5 @@ export type Screen =
   | "veeam"
   | "checkpoint"
   | "knownissues"
+  | "projectboard"
   | "admin";

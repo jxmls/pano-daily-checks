@@ -38,15 +38,11 @@ export function RadioGroup({
 export function ValidationBanner({ message, valid }: { message: string; valid: boolean }) {
   if (!message) return null;
   return (
-    <div className={[
-      "flex items-center gap-3 rounded-xl px-5 py-3.5 text-sm font-semibold",
-      valid
-        ? "text-emerald-800"
-        : "text-amber-800",
-    ].join(" ")}
+    <div className="flex items-center gap-3 rounded-xl px-5 py-3.5 text-sm font-semibold"
     style={{
-      background: valid ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)",
-      border: valid ? "1.5px solid rgba(16,185,129,0.25)" : "1.5px solid rgba(245,158,11,0.25)",
+      background: valid ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.08)",
+      border: valid ? "1.5px solid rgba(34,197,94,0.25)" : "1.5px solid rgba(245,158,11,0.25)",
+      color: valid ? "#22c55e" : "#f59e0b",
     }}>
       {valid
         ? <CheckCircleIcon className="h-5 w-5 text-emerald-500 shrink-0" />
@@ -106,7 +102,7 @@ export function AlertTable<T extends { selected: boolean }>({
               <tr>
                 <td colSpan={columns.length + 1}
                   className="table-td py-10 text-center text-sm font-medium"
-                  style={{ color: "#9bb5b5" }}>
+                  style={{ color: "#64748b" }}>
                   No rows yet — click &ldquo;{addLabel}&rdquo; to add one.
                 </td>
               </tr>
@@ -116,7 +112,7 @@ export function AlertTable<T extends { selected: boolean }>({
                   background: row.selected ? "rgba(0,130,130,0.05)" : undefined,
                   transition: "background 0.1s",
                 }}
-                onMouseEnter={(e) => { if (!row.selected) (e.currentTarget as HTMLElement).style.background = "#f8fafa"; }}
+                onMouseEnter={(e) => { if (!row.selected) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)"; }}
                 onMouseLeave={(e) => { if (!row.selected) (e.currentTarget as HTMLElement).style.background = ""; }}
               >
                 <td className="table-td text-center">
@@ -192,16 +188,16 @@ export function SectionCard({ title, subtitle, children, status }: SectionCardPr
       {/* Header strip */}
       <div className="flex items-center gap-3 px-6 py-4"
         style={{
-          borderBottom: "1.5px solid rgba(0,130,130,0.08)",
-          background: "linear-gradient(to right, rgba(0,130,130,0.04), transparent)",
+          borderBottom: "1px solid #1e293b",
+          background: "rgba(255,255,255,0.02)",
         }}>
         <span className="w-2 h-2 rounded-full shrink-0 mt-px"
           style={{ background: dotColor, boxShadow: `0 0 6px ${dotColor}99` }} />
         <div>
-          <h2 className="text-sm font-bold text-gray-900 tracking-tight leading-none">
+          <h2 className="text-sm font-bold tracking-tight leading-none" style={{ color: "#e2e8f0" }}>
             {title}
           </h2>
-          {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>{subtitle}</p>}
         </div>
       </div>
       <div className="p-6 space-y-5">{children}</div>
@@ -264,13 +260,13 @@ export function KpiCard({
 }) {
   return (
     <div className="stat-card"
-      style={accent ? { borderColor: "rgba(0,130,130,0.3)", background: "rgba(0,130,130,0.04)" } : undefined}>
+      style={accent ? { borderColor: "rgba(0,180,180,0.3)", background: "rgba(0,180,180,0.04)" } : undefined}>
       <p className="label mb-0">{label}</p>
       <p className="text-3xl font-black tracking-tight leading-none mt-1"
-        style={{ color: accent ? "#008282" : "#0f1a1a" }}>
+        style={{ color: accent ? "#00b4b4" : "#e2e8f0" }}>
         {value}
       </p>
-      {sub && <p className="text-xs text-gray-400 font-medium mt-1">{sub}</p>}
+      {sub && <p className="text-xs font-medium mt-1" style={{ color: "#64748b" }}>{sub}</p>}
     </div>
   );
 }
@@ -295,10 +291,10 @@ export function SubmitBar({
       style={{
         position: "fixed",
         bottom: 0,
-        left: 220,
+        left: 240,
         right: 0,
-        background: "white",
-        borderTop: "1.5px solid rgba(0,130,130,0.10)",
+        background: "#0d1526",
+        borderTop: "1px solid #1e293b",
         boxShadow: "0 -4px 20px rgba(0,0,0,0.06)",
         display: "flex",
         alignItems: "center",
@@ -313,7 +309,7 @@ export function SubmitBar({
         {isValid
           ? <CheckCircleIcon className="h-5 w-5 text-emerald-500 shrink-0" />
           : <ExclamationTriangleIcon className="h-5 w-5 text-amber-500 shrink-0" />}
-        <span style={{ color: isValid ? "#059669" : "#d97706" }}>{message}</span>
+        <span style={{ color: isValid ? "#22c55e" : "#f59e0b" }}>{message}</span>
       </div>
 
       {/* Submit button */}

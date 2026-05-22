@@ -83,7 +83,7 @@ export default function AdminPortal() {
       />
 
       {error && (
-        <p className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 font-medium">
+        <p className="rounded-lg px-4 py-3 text-sm font-medium" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
           {error}
         </p>
       )}
@@ -97,15 +97,15 @@ export default function AdminPortal() {
             return (
               <div key={m} className="stat-card"
                 style={done
-                  ? { borderColor: "rgba(0,130,130,0.3)", background: "rgba(0,130,130,0.04)" }
+                  ? { borderColor: "rgba(0,180,180,0.3)", background: "rgba(0,180,180,0.04)" }
                   : { borderColor: "rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.03)" }}>
                 <div className="flex items-center justify-between">
                   <ModulePill module={m} />
-                  <span className={`text-xs font-black ${done ? "text-emerald-600" : "text-amber-500"}`}>
-                    {done ? "✓" : "—"}
+                  <span className="text-xs font-black" style={{ color: done ? "#22c55e" : "#f59e0b" }}>
+                    {done ? "+" : "—"}
                   </span>
                 </div>
-                <p className={`text-sm font-bold mt-2 ${done ? "text-emerald-700" : "text-amber-600"}`}>
+                <p className="text-sm font-bold mt-2" style={{ color: done ? "#22c55e" : "#f59e0b" }}>
                   {done ? "Complete" : "Pending"}
                 </p>
               </div>
@@ -128,7 +128,7 @@ export default function AdminPortal() {
           <div className="lg:col-span-2">
             <label className="label">Search</label>
             <div className="relative">
-              <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4" style={{ color: "#64748b" }} />
               <input className="input pl-9" placeholder="Engineer, module, date…"
                 value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             </div>
@@ -177,35 +177,35 @@ export default function AdminPortal() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="table-td py-16 text-center font-medium" style={{ color: "#9bb5b5" }}>
-                  Loading…
+                <td colSpan={6} className="table-td py-16 text-center font-medium" style={{ color: "#64748b" }}>
+                  Loading...
                 </td>
               </tr>
             ) : paged.length === 0 ? (
               <tr>
                 <td colSpan={6} className="table-td py-16 text-center font-medium"
-                  style={{ color: "#9bb5b5" }}>
+                  style={{ color: "#64748b" }}>
                   No submissions found.
                 </td>
               </tr>
             ) : paged.map((s) => (
               <tr key={s.id}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafa")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 style={{ transition: "background 0.1s" }}>
                 <td className="table-td"><ModulePill module={s.module} /></td>
-                <td className="table-td font-semibold text-gray-800">{s.engineer}</td>
-                <td className="table-td font-mono text-xs text-gray-500">{s.checkDate}</td>
-                <td className="table-td text-xs text-gray-400">{fmtDate(s.createdAt)}</td>
+                <td className="table-td font-semibold" style={{ color: "#e2e8f0" }}>{s.engineer}</td>
+                <td className="table-td font-mono text-xs" style={{ color: "#64748b" }}>{s.checkDate}</td>
+                <td className="table-td text-xs" style={{ color: "#64748b" }}>{fmtDate(s.createdAt)}</td>
                 <td className="table-td">
                   <StatusPill label={s.passed ? "Passed" : "Issues"} />
                 </td>
                 <td className="table-td">
                   <button onClick={() => setInspect(s)}
                     className="text-xs font-bold transition-colors"
-                    style={{ color: "#008282" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "#005a5a")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "#008282")}>
+                    style={{ color: "#00b4b4", background: "none", border: "none", cursor: "pointer" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#00cccc")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#00b4b4")}>
                     View →
                   </button>
                 </td>
@@ -218,7 +218,7 @@ export default function AdminPortal() {
       {/* Pagination */}
       {pages > 1 && (
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-400 font-medium">
+          <span className="text-sm font-medium" style={{ color: "#64748b" }}>
             {filtered.length} results · page {page} of {pages}
           </span>
           <div className="flex gap-2">
@@ -234,17 +234,18 @@ export default function AdminPortal() {
       {inspect && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setInspect(null)} />
-          <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl max-h-[85vh] overflow-y-auto"
-            style={{ border: "1.5px solid rgba(0,130,130,0.15)" }}>
+          <div className="relative w-full max-w-2xl rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto"
+            style={{ background: "#111827", border: "1px solid #1e293b" }}>
             <div className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: "1.5px solid #f0f7f7", background: "rgba(0,130,130,0.03)" }}>
+              style={{ borderBottom: "1px solid #1e293b", background: "rgba(0,180,180,0.05)" }}>
               <div className="flex items-center gap-3">
                 <ModulePill module={inspect.module} />
-                <span className="font-bold text-gray-800">{inspect.engineer}</span>
+                <span className="font-bold" style={{ color: "#e2e8f0" }}>{inspect.engineer}</span>
               </div>
               <button onClick={() => setInspect(null)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-lg font-bold">
-                ×
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-lg font-bold"
+                style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
+                x
               </button>
             </div>
             <div className="px-6 py-5 space-y-3">
@@ -257,16 +258,16 @@ export default function AdminPortal() {
                 ].map(([k, v]) => (
                   <div key={k}>
                     <p className="label mb-0.5">{k}</p>
-                    <p className="font-semibold text-gray-800">{v}</p>
+                    <p className="font-semibold" style={{ color: "#e2e8f0" }}>{v}</p>
                   </div>
                 ))}
               </div>
               <details className="mt-4 group">
-                <summary className="cursor-pointer text-sm font-bold text-brand-600 hover:text-brand-700 select-none">
+                <summary className="cursor-pointer text-sm font-bold select-none" style={{ color: "#00b4b4" }}>
                   Raw payload
                 </summary>
-                <pre className="mt-3 rounded-xl p-4 text-xs overflow-x-auto font-mono"
-                  style={{ background: "#f0f7f7", border: "1.5px solid rgba(0,130,130,0.1)", color: "#003f3f" }}>
+                <pre className="mt-3 rounded-lg p-4 text-xs overflow-x-auto font-mono"
+                  style={{ background: "#0a0f1e", border: "1px solid #1e293b", color: "#e2e8f0" }}>
                   {JSON.stringify(inspect.payload, null, 2)}
                 </pre>
               </details>

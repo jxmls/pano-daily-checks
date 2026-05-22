@@ -63,21 +63,28 @@ export default function LoginScreen({ onLogin }: Props) {
   };
 
   return (
-    <div className="min-h-[calc(100vh-52px)] flex items-center justify-center px-4 py-12"
+    <div className="min-h-screen flex items-center justify-center px-4 py-12"
       style={{
+        position: "relative",
         background: "linear-gradient(135deg, #001414 0%, #002626 40%, #003a3a 100%)",
+        overflow: "hidden",
       }}>
 
       {/* Background grid */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.06]"
+      <div className="pointer-events-none opacity-[0.06]"
         style={{
+          position: "absolute", inset: 0, overflow: "hidden",
           backgroundImage: "linear-gradient(#008282 1px, transparent 1px), linear-gradient(90deg, #008282 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }} />
 
       {/* Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(0,130,130,0.15) 0%, transparent 70%)" }} />
+      <div className="pointer-events-none"
+        style={{
+          position: "absolute", top: "33%", left: "50%", transform: "translate(-50%, -50%)",
+          width: 384, height: 384, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(0,130,130,0.15) 0%, transparent 70%)",
+        }} />
 
       <div className="relative w-full max-w-sm">
 

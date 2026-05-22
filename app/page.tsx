@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { Screen, SessionUser, Submission } from "@/types";
 import LoginScreen from "@/components/LoginScreen";
 import Sidebar from "@/components/Sidebar";
+import TopBar from "@/components/TopBar";
 import Dashboard from "@/components/Dashboard";
 import SolarWindsForm from "@/components/forms/SolarWindsForm";
 import VeeamForm from "@/components/forms/VeeamForm";
@@ -53,16 +54,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar
-        user={user}
-        screen={screen}
-        onSelectScreen={setScreen}
-        onSignOut={handleSignOut}
-        completedToday={completedToday}
-      />
-      <main style={{ marginLeft: 220, flex: 1, minHeight: "100vh", overflowY: "auto" }}>
-        <div className="max-w-5xl mx-auto px-6 py-8 pb-32">
+    <div style={{ minHeight: "100vh", background: "#0a0f1e" }}>
+      <Sidebar user={user} screen={screen} onSelectScreen={setScreen} completedToday={completedToday} />
+      <TopBar user={user} onSignOut={handleSignOut} />
+      <main style={{ marginLeft: 240, marginTop: 52, minHeight: "calc(100vh - 52px)" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px 120px" }}>
           {screen === "dashboard" ? (
             <Dashboard
               engineer={user.name}
@@ -96,6 +92,10 @@ export default function Home() {
             />
           ) : screen === "knownissues" ? (
             <KnownIssuesCatalog engineer={user.name} />
+          ) : screen === "projectboard" ? (
+            <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
+              <p style={{ fontSize: 16, fontWeight: 600, color: "#64748b" }}>Project Board — coming soon</p>
+            </div>
           ) : screen === "admin" ? (
             <AdminPortal />
           ) : null}

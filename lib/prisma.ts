@@ -2,7 +2,7 @@
 // The types are generated from prisma/schema.prisma at build time — this stub keeps tsc
 // happy in environments where prisma generate hasn't been run yet.
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
 let PrismaClientCtor: any;
 try {
   PrismaClientCtor = require("@prisma/client").PrismaClient;
