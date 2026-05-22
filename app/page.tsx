@@ -20,14 +20,12 @@ const ENGINEER_OPTIONS = ["Jose Lucar", "Alex Field", "Mihir Sangani"];
 function ProfileSetup({ onComplete }: { onComplete: (name: string, checkDate: string) => void }) {
   const [name, setName] = useState(() =>
     typeof window !== "undefined" ? localStorage.getItem("engineerName") ?? "" : "");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [error, setError] = useState("");
 
   const handleSubmit = () => {
     if (!name.trim()) { setError("Please enter your name."); return; }
-    if (!date) { setError("Please select a date."); return; }
     localStorage.setItem("engineerName", name.trim());
-    onComplete(name.trim(), date);
+    onComplete(name.trim(), new Date().toISOString().split("T")[0]);
   };
 
   return (
@@ -44,7 +42,7 @@ function ProfileSetup({ onComplete }: { onComplete: (name: string, checkDate: st
             Who&apos;s checking today?
           </h2>
           <p style={{ fontSize: 14, color: "#64748b", marginTop: 6 }}>
-            Set your name and check date to continue.
+            Select your name to continue.
           </p>
         </div>
 
@@ -67,26 +65,6 @@ function ProfileSetup({ onComplete }: { onComplete: (name: string, checkDate: st
             <datalist id="engineers-setup">
               {ENGINEER_OPTIONS.map((n) => <option key={n} value={n} />)}
             </datalist>
-          </div>
-
-          <div>
-            <label className="label">Check date</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="date"
-                className="input"
-                style={{ flex: 1, colorScheme: "dark" }}
-                value={date}
-                onChange={(e) => { setDate(e.target.value); setError(""); }}
-              />
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ fontSize: 12, padding: "0 14px" }}
-                onClick={() => setDate(new Date().toISOString().split("T")[0])}>
-                Today
-              </button>
-            </div>
           </div>
 
           {error && (
