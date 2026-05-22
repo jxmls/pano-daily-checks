@@ -14,18 +14,114 @@ import KnownIssuesCatalog from "@/components/KnownIssuesCatalog";
 import AdminPortal from "@/components/admin/AdminPortal";
 
 const DEFAULT_SCREEN: Screen = "dashboard";
+const ENGINEER_OPTIONS = ["Jose Lucar", "Alex Field", "Mihir Sangani"];
+
+function ProfileSetup({ onComplete }: { onComplete: (name: string, checkDate: string) => void }) {
+  const [name, setName] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("engineerName") ?? "" : "");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [error, setError] = useState("");
+
+  const handleSubmit = () => {
+    if (!name.trim()) { setError("Please enter your name."); return; }
+    if (!date) { setError("Please select a date."); return; }
+    localStorage.setItem("engineerName", name.trim());
+    onComplete(name.trim(), date);
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#0a0f1e",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+    }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#00b4b4", marginBottom: 8 }}>
+            Signed in
+          </p>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#e2e8f0", margin: 0 }}>
+            Who&apos;s checking today?
+          </h2>
+          <p style={{ fontSize: 14, color: "#64748b", marginTop: 6 }}>
+            Set your name and check date to continue.
+          </p>
+        </div>
+
+        <div style={{
+          background: "#111827", border: "1px solid #1e293b",
+          borderRadius: 16, padding: "28px 28px",
+          display: "flex", flexDirection: "column", gap: 20,
+        }}>
+          <div>
+            <label className="label">Your name</label>
+            <input
+              list="engineers-setup"
+              placeholder="Engineer name"
+              className="input w-full"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+              autoFocus
+            />
+            <datalist id="engineers-setup">
+              {ENGINEER_OPTIONS.map((n) => <option key={n} value={n} />)}
+            </datalist>
+          </div>
+
+          <div>
+            <label className="label">Check date</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="date"
+                className="input"
+                style={{ flex: 1, colorScheme: "dark" }}
+                value={date}
+                onChange={(e) => { setDate(e.target.value); setError(""); }}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ fontSize: 12, padding: "0 14px" }}
+                onClick={() => setDate(new Date().toISOString().split("T")[0])}>
+                Today
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#ef4444", margin: 0 }}>{error}</p>
+          )}
+
+          <button
+            type="button"
+            className="btn-primary"
+            style={{ width: "100%", padding: "12px 0", fontSize: 14, fontWeight: 800 }}
+            onClick={handleSubmit}>
+            Let&apos;s go
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
+  const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [screen, setScreen] = useState<Screen>(DEFAULT_SCREEN);
   const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
 
-  const handleLogin = (name: string, checkDate: string) => {
-    setUser({ name, checkDate });
+  const handleLogin = () => {
+    setLoggedIn(true);
     setScreen(DEFAULT_SCREEN);
   };
 
+  const handleProfileComplete = (name: string, checkDate: string) => {
+    setUser({ name, checkDate });
+  };
+
   const handleSignOut = () => {
+    setLoggedIn(false);
     setUser(null);
     setScreen(DEFAULT_SCREEN);
     setCompletedToday(new Set());
@@ -49,8 +145,12 @@ export default function Home() {
       .catch(() => {});
   }, [user]);
 
-  if (!user) {
+  if (!loggedIn) {
     return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  if (!user) {
+    return <ProfileSetup onComplete={handleProfileComplete} />;
   }
 
   return (

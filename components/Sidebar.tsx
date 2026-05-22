@@ -104,15 +104,18 @@ export default function Sidebar({ user, screen, onSelectScreen, completedToday }
         display: "flex", flexDirection: "column", zIndex: 40,
       }}>
         {/* Logo */}
-        <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #1e293b" }}>
-          <img src="/panologo.png" alt="Panoptics"
-            style={{ height: 22, filter: "brightness(0) invert(1)", opacity: 0.85, marginBottom: 6 }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", letterSpacing: "-0.01em" }}>
-            Infrastructure Hub
-          </div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 2 }}>
-            Daily Checks
+        <div style={{ padding: "18px 16px 16px", borderBottom: "1px solid #1e293b", display: "flex", alignItems: "center", gap: 10 }}>
+          <svg width="30" height="30" viewBox="0 0 52 52" aria-hidden="true">
+            <rect width="52" height="52" rx="14" fill="#00b4b4" />
+            <text x="26" y="38" textAnchor="middle" fill="#002626" fontSize="32" fontWeight="900" fontFamily="Arial,sans-serif">P</text>
+          </svg>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", letterSpacing: "-0.01em" }}>
+              Infrastructure Hub
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#64748b", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 2 }}>
+              Daily Checks
+            </div>
           </div>
         </div>
 

@@ -12,9 +12,9 @@ export function getAuthMode(): AuthMode {
   return valid.includes(env as AuthMode) ? (env as AuthMode) : "local";
 }
 
-export async function localLogin(engineer: string, password: string): Promise<string> {
-  if (!engineer.trim()) throw new Error("Please enter your name.");
-  if (!password) throw new Error("Please enter the password.");
+export async function localLogin(username: string, password: string): Promise<void> {
+  if (!username.trim()) throw new Error("Username required.");
+  if (!password) throw new Error("Password required.");
 
   const res = await fetch("/api/auth/login", {
     method: "POST",
@@ -24,8 +24,6 @@ export async function localLogin(engineer: string, password: string): Promise<st
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? "Sign-in failed.");
-
-  return engineer.trim();
 }
 
 export async function msalLogin(engineer: string): Promise<string> {

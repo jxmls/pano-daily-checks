@@ -4,62 +4,66 @@ import { useState, useMemo } from "react";
 import { EyeIcon, EyeSlashIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { getAuthMode, localLogin, msalLogin } from "@/utils/auth";
 
-const ENGINEER_OPTIONS = ["Jose Lucar", "Alex Field", "Mihir Sangani"];
+interface Props { onLogin: () => void; }
 
-interface Props { onLogin: (name: string, checkDate: string) => void; }
+function LogoMark() {
+  return (
+    <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+      <rect width="52" height="52" rx="14" fill="#00b4b4" />
+      <text x="26" y="38" textAnchor="middle" fill="#002626" fontSize="32" fontWeight="900" fontFamily="Arial,sans-serif">P</text>
+    </svg>
+  );
+}
+
+function MicrosoftIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 23 23" aria-hidden="true">
+      <rect width="10" height="10" x="0"    y="0"    fill="#F25022" />
+      <rect width="10" height="10" x="12.5" y="0"    fill="#7FBA00" />
+      <rect width="10" height="10" x="0"    y="12.5" fill="#00A4EF" />
+      <rect width="10" height="10" x="12.5" y="12.5" fill="#FFB900" />
+    </svg>
+  );
+}
 
 export default function LoginScreen({ onLogin }: Props) {
   const authMode = useMemo(() => getAuthMode(), []);
   const hasLocal = authMode === "local" || authMode === "both";
   const hasSSO   = authMode === "sso"   || authMode === "both";
 
-  const [engineer, setEngineer] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem("engineerName") ?? "" : "");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({ engineer: "", date: "", password: "" });
-
-  const q = engineer.trim().toLowerCase();
-  const suggestions = q.length >= 2
-    ? ENGINEER_OPTIONS.filter((n) => n.toLowerCase().includes(q) && n.toLowerCase() !== q)
-    : [];
-
-  const validateLocal = () => {
-    const e = { engineer: "", date: "", password: "" };
-    if (!engineer.trim()) e.engineer = "Name required";
-    if (!date) e.date = "Date required";
-    if (!password) e.password = "Password required";
-    setFieldErrors(e);
-    return !e.engineer && !e.date && !e.password;
-  };
-
-  const complete = (name: string) => {
-    localStorage.setItem("engineerName", name);
-    localStorage.setItem("checkDate", date);
-    onLogin(name, date);
-  };
 
   const handleLocal = async () => {
     setError("");
-    if (!validateLocal()) return;
+    if (!username.trim()) { setError("Username required."); return; }
+    if (!password) { setError("Password required."); return; }
     setLoading(true);
-    try { complete(await localLogin(engineer, password)); }
-    catch (e: unknown) { setError((e as Error).message ?? "Sign-in failed."); }
-    finally { setLoading(false); }
+    try {
+      await localLogin(username, password);
+      onLogin();
+    } catch (e: unknown) {
+      setError((e as Error).message ?? "Sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSSO = async () => {
     setError("");
-    if (!engineer.trim()) { setFieldErrors((p) => ({ ...p, engineer: "Name required" })); return; }
-    if (!date) { setFieldErrors((p) => ({ ...p, date: "Date required" })); return; }
     setLoading(true);
-    try { complete(await msalLogin(engineer)); }
-    catch (e: unknown) { setError((e as Error).message ?? "SSO failed."); }
-    finally { setLoading(false); }
+    try {
+      await msalLogin(username || "");
+      onLogin();
+    } catch (e: unknown) {
+      setError((e as Error).message ?? "SSO failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,11 +92,11 @@ export default function LoginScreen({ onLogin }: Props) {
 
       <div className="relative w-full max-w-sm">
 
-        {/* Logo area */}
+        {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/panologo.png" alt="Panoptics"
-            className="h-10 w-auto object-contain mx-auto brightness-0 invert opacity-90 mb-3"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+            <LogoMark />
+          </div>
           <h1 className="text-2xl font-black text-white tracking-tight">Infrastructure Hub</h1>
           <p className="text-sm mt-1" style={{ color: "#5ccfcf" }}>Daily Checks Portal</p>
         </div>
@@ -106,76 +110,10 @@ export default function LoginScreen({ onLogin }: Props) {
             boxShadow: "0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
           }}>
 
-          {/* Engineer */}
-          <div>
-            <label className="label" style={{ color: "rgba(255,255,255,0.45)" }}>Engineer</label>
-            <input
-              list="engineers"
-              placeholder="Your name"
-              className="w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all"
-              style={{
-                background: "rgba(255,255,255,0.07)",
-                border: fieldErrors.engineer ? "1.5px solid #f87171" : "1.5px solid rgba(0,130,130,0.3)",
-                color: "white",
-                outline: "none",
-              }}
-              value={engineer}
-              onChange={(e) => setEngineer(e.target.value)}
-              onFocus={(e) => { (e.target as HTMLElement).style.borderColor = "#008282"; }}
-              onBlur={(e) => { (e.target as HTMLElement).style.borderColor = fieldErrors.engineer ? "#f87171" : "rgba(0,130,130,0.3)"; }}
-              autoFocus
-            />
-            <datalist id="engineers">
-              {ENGINEER_OPTIONS.map((n) => <option key={n} value={n} />)}
-            </datalist>
-            {suggestions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {suggestions.map((s) => (
-                  <button key={s} type="button" onClick={() => setEngineer(s)}
-                    className="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
-                    style={{ background: "rgba(0,130,130,0.2)", color: "#7dd8d8", border: "1px solid rgba(0,130,130,0.3)" }}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-            {fieldErrors.engineer && <p className="mt-1 text-xs font-semibold text-red-400">{fieldErrors.engineer}</p>}
-          </div>
-
-          {/* Date */}
-          <div>
-            <label className="label" style={{ color: "rgba(255,255,255,0.45)" }}>Check Date</label>
-            <div className="flex gap-2">
-              <input type="date"
-                className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all"
-                style={{
-                  background: "rgba(255,255,255,0.07)",
-                  border: fieldErrors.date ? "1.5px solid #f87171" : "1.5px solid rgba(0,130,130,0.3)",
-                  color: "white",
-                  outline: "none",
-                  colorScheme: "dark",
-                }}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-              <button type="button"
-                onClick={() => setDate(new Date().toISOString().split("T")[0])}
-                className="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0"
-                style={{ background: "rgba(0,130,130,0.2)", color: "#7dd8d8", border: "1.5px solid rgba(0,130,130,0.3)" }}>
-                Today
-              </button>
-            </div>
-            {fieldErrors.date && <p className="mt-1 text-xs font-semibold text-red-400">{fieldErrors.date}</p>}
-          </div>
-
-          {/* SSO */}
           {hasSSO && (
             <button type="button" onClick={handleSSO} disabled={loading}
               className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-bold transition-all"
-              style={{
-                background: "white", color: "#0f1a1a",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-              }}>
+              style={{ background: "white", color: "#0f1a1a", boxShadow: "0 2px 8px rgba(0,0,0,0.3)", cursor: loading ? "not-allowed" : "pointer" }}>
               <MicrosoftIcon />
               {loading ? "Signing in…" : "Sign in with Microsoft"}
             </button>
@@ -189,9 +127,30 @@ export default function LoginScreen({ onLogin }: Props) {
             </div>
           )}
 
-          {/* Password */}
           {hasLocal && (
             <div className="space-y-4">
+              {/* Username */}
+              <div>
+                <label className="label" style={{ color: "rgba(255,255,255,0.45)" }}>Email or username</label>
+                <input
+                  type="text"
+                  autoComplete="username"
+                  placeholder="you@example.com"
+                  className="w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.07)",
+                    border: "1.5px solid rgba(0,130,130,0.3)",
+                    color: "white", outline: "none",
+                  }}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onFocus={(e) => { (e.target as HTMLElement).style.borderColor = "#00b4b4"; }}
+                  onBlur={(e)  => { (e.target as HTMLElement).style.borderColor = "rgba(0,130,130,0.3)"; }}
+                  autoFocus
+                />
+              </div>
+
+              {/* Password */}
               <div>
                 <label className="label" style={{ color: "rgba(255,255,255,0.45)" }}>Password</label>
                 <div className="relative">
@@ -202,9 +161,8 @@ export default function LoginScreen({ onLogin }: Props) {
                     className="w-full rounded-xl px-4 py-3 pr-11 text-sm font-semibold transition-all"
                     style={{
                       background: "rgba(255,255,255,0.07)",
-                      border: fieldErrors.password ? "1.5px solid #f87171" : "1.5px solid rgba(0,130,130,0.3)",
-                      color: "white",
-                      outline: "none",
+                      border: "1.5px solid rgba(0,130,130,0.3)",
+                      color: "white", outline: "none",
                     }}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -213,22 +171,23 @@ export default function LoginScreen({ onLogin }: Props) {
                       if (e.key === "Enter") handleLocal();
                     }}
                     onKeyUp={(e) => setCapsLock(e.getModifierState("CapsLock"))}
+                    onFocus={(e) => { (e.target as HTMLElement).style.borderColor = "#00b4b4"; }}
+                    onBlur={(e)  => { (e.target as HTMLElement).style.borderColor = "rgba(0,130,130,0.3)"; }}
                   />
                   <button type="button" tabIndex={-1}
                     onClick={() => setShowPw((p) => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-100"
-                    style={{ color: "rgba(255,255,255,0.4)" }}>
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center" }}>
                     {showPw ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
                 </div>
-                {capsLock && <p className="mt-1 text-xs text-amber-400 font-semibold">⚠ Caps Lock is on</p>}
-                {fieldErrors.password && <p className="mt-1 text-xs text-red-400 font-semibold">{fieldErrors.password}</p>}
+                {capsLock && <p className="mt-1 text-xs font-semibold" style={{ color: "#f59e0b" }}>Caps Lock is on</p>}
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-red-400"
-                  style={{ background: "rgba(239,68,68,0.1)", border: "1.5px solid rgba(239,68,68,0.2)" }}>
-                  <ExclamationCircleIcon className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+                  style={{ background: "rgba(239,68,68,0.1)", border: "1.5px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+                  <ExclamationCircleIcon className="h-4 w-4 mt-0.5" style={{ flexShrink: 0 }} />
                   {error}
                 </div>
               )}
@@ -240,7 +199,7 @@ export default function LoginScreen({ onLogin }: Props) {
                   boxShadow: loading ? "none" : "0 4px 16px rgba(0,130,130,0.4)",
                   cursor: loading ? "not-allowed" : "pointer",
                 }}>
-                {loading ? "Logging in…" : "Continue →"}
+                {loading ? "Signing in…" : "Continue"}
               </button>
             </div>
           )}
@@ -251,16 +210,5 @@ export default function LoginScreen({ onLogin }: Props) {
         </p>
       </div>
     </div>
-  );
-}
-
-function MicrosoftIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 23 23" aria-hidden="true">
-      <rect width="10" height="10" x="0"    y="0"    fill="#F25022" />
-      <rect width="10" height="10" x="12.5" y="0"    fill="#7FBA00" />
-      <rect width="10" height="10" x="0"    y="12.5" fill="#00A4EF" />
-      <rect width="10" height="10" x="12.5" y="12.5" fill="#FFB900" />
-    </svg>
   );
 }
