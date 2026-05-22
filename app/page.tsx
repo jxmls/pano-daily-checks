@@ -12,6 +12,7 @@ import VmwareForm from "@/components/forms/VmwareForm";
 import CheckpointForm from "@/components/forms/CheckpointForm";
 import KnownIssuesCatalog from "@/components/KnownIssuesCatalog";
 import AdminPortal from "@/components/admin/AdminPortal";
+import ProjectBoard from "@/components/board/ProjectBoard";
 
 const DEFAULT_SCREEN: Screen = "dashboard";
 const ENGINEER_OPTIONS = ["Jose Lucar", "Alex Field", "Mihir Sangani"];
@@ -193,9 +194,7 @@ export default function Home() {
           ) : screen === "knownissues" ? (
             <KnownIssuesCatalog engineer={user.name} />
           ) : screen === "projectboard" ? (
-            <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
-              <p style={{ fontSize: 16, fontWeight: 600, color: "#64748b" }}>Project Board — coming soon</p>
-            </div>
+            <ProjectBoard engineer={user.name} />
           ) : screen === "admin" ? (
             <AdminPortal />
           ) : null}

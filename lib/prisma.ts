@@ -1,19 +1,30 @@
-// NOTE: Run `npx prisma generate` after `npm install` to resolve the @prisma/client import.
-// The types are generated from prisma/schema.prisma at build time — this stub keeps tsc
-// happy in environments where prisma generate hasn't been run yet.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const globalForPrisma = globalThis as unknown as { prisma?: any };
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
-let PrismaClientCtor: any;
+let _prisma: any;
 try {
-  PrismaClientCtor = require("@prisma/client").PrismaClient;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaClient } = require("@prisma/client");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaPg } = require("@prisma/adapter-pg");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Pool } = require("pg");
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
+  _prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 } catch {
-  PrismaClientCtor = class {
-    async $connect() {}
-    submission = { findMany: async () => [], create: async (d: any) => d };
-    knownIssue  = { findMany: async () => [], create: async (d: any) => d, update: async (d: any) => d, delete: async () => ({}) };
+  const noop = async (d?: any) => d ?? {};
+  const noopArr = async () => [];
+  const noopNull = async () => null;
+  _prisma = {
+    board:      { findFirst: noopNull, create: noop },
+    column:     { findMany: noopArr, findFirst: noopNull, create: noop, update: noop, delete: noop },
+    card:       { findMany: noopArr, findUnique: noopNull, findFirst: noopNull, create: noop, update: noop, delete: noop },
+    comment:    { findMany: noopArr, create: noop },
+    submission: { findMany: noopArr, create: noop },
+    knownIssue: { findMany: noopArr, create: noop, update: noop, delete: noop },
   };
 }
 
-const globalForPrisma = globalThis as unknown as { prisma?: any };
-export const prisma: any = globalForPrisma.prisma ?? new PrismaClientCtor();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma: any = _prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = _prisma;

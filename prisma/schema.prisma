@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Submission {
@@ -33,4 +32,49 @@ model KnownIssue {
   reviewHistory  Json     @default("[]")
   status         String   @default("active")
   risk           String   @default("low")
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  columns   Column[]
+}
+
+model Column {
+  id      String @id @default(cuid())
+  boardId String
+  name    String
+  order   Int    @default(0)
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards   Card[]
+}
+
+model Card {
+  id             String    @id @default(cuid())
+  columnId       String
+  title          String
+  description    String?
+  priority       String    @default("MEDIUM")
+  status         String?
+  assignee       String?
+  labels         String[]
+  dueDate        DateTime?
+  estimatedHours Float?
+  attachmentUrls String[]
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  order          Int       @default(0)
+  column         Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  comments       Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  cardId    String
+  author    String
+  body      String
+  createdAt DateTime @default(now())
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
 }
