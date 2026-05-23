@@ -80,9 +80,9 @@ function KanbanCard({ card, index, onSelect }: { card: BoardCard; index: number;
           </div>
 
           {/* Labels */}
-          {card.labels.length > 0 && (
+          {(card.labels ?? []).length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-              {card.labels.slice(0, 3).map((l) => (
+              {(card.labels ?? []).slice(0, 3).map((l) => (
                 <span key={l} style={{
                   padding: "1px 7px", borderRadius: 4, fontSize: 10, fontWeight: 600,
                   background: "rgba(0,180,180,0.1)", color: "#00b4b4",
@@ -90,8 +90,8 @@ function KanbanCard({ card, index, onSelect }: { card: BoardCard; index: number;
                   {l}
                 </span>
               ))}
-              {card.labels.length > 3 && (
-                <span style={{ fontSize: 10, color: "#64748b" }}>+{card.labels.length - 3}</span>
+              {(card.labels ?? []).length > 3 && (
+                <span style={{ fontSize: 10, color: "#64748b" }}>+{(card.labels ?? []).length - 3}</span>
               )}
             </div>
           )}
@@ -139,7 +139,7 @@ export default function KanbanView({
   const filterCards = (cards: BoardCard[]) =>
     cards.filter((c) => {
       if (search && !c.title.toLowerCase().includes(search.toLowerCase()) &&
-          !c.labels.some((l) => l.toLowerCase().includes(search.toLowerCase())) &&
+          !(c.labels ?? []).some((l) => l.toLowerCase().includes(search.toLowerCase())) &&
           !(c.assignee ?? "").toLowerCase().includes(search.toLowerCase())) return false;
       if (filterPriority && c.priority !== filterPriority) return false;
       if (filterAssignee && c.assignee !== filterAssignee) return false;

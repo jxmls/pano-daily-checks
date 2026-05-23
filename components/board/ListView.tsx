@@ -33,13 +33,13 @@ export default function ListView({ columns, search, filterPriority, filterAssign
   const colMap = Object.fromEntries(columns.map((c) => [c.id, c.name]));
 
   const allCards = columns.flatMap((col) =>
-    col.cards.map((c) => ({ ...c, columnName: col.name }))
+    (col.cards ?? []).map((c) => ({ ...c, columnName: col.name }))
   );
 
   const filtered = allCards.filter((c) => {
     if (search && !c.title.toLowerCase().includes(search.toLowerCase()) &&
         !(c.assignee ?? "").toLowerCase().includes(search.toLowerCase()) &&
-        !c.labels.some((l) => l.toLowerCase().includes(search.toLowerCase()))) return false;
+        !(c.labels ?? []).some((l) => l.toLowerCase().includes(search.toLowerCase()))) return false;
     if (filterPriority && c.priority !== filterPriority) return false;
     if (filterAssignee && c.assignee !== filterAssignee) return false;
     return true;
@@ -143,13 +143,13 @@ export default function ListView({ columns, search, filterPriority, filterAssign
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                    {card.labels.slice(0, 2).map((l) => (
+                    {(card.labels ?? []).slice(0, 2).map((l) => (
                       <span key={l} style={{
                         padding: "1px 7px", borderRadius: 4, fontSize: 10, fontWeight: 600,
                         background: "rgba(0,180,180,0.1)", color: "#00b4b4",
                       }}>{l}</span>
                     ))}
-                    {card.labels.length > 2 && <span style={{ fontSize: 10, color: "#64748b" }}>+{card.labels.length - 2}</span>}
+                    {(card.labels ?? []).length > 2 && <span style={{ fontSize: 10, color: "#64748b" }}>+{(card.labels ?? []).length - 2}</span>}
                   </div>
                 </td>
                 <td style={{ padding: "10px 14px", color: overdue ? "#ef4444" : "#64748b", fontSize: 12, fontWeight: overdue ? 700 : 400 }}>

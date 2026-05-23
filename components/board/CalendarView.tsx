@@ -29,7 +29,7 @@ export default function CalendarView({ columns, search, filterPriority, filterAs
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
-  const allCards = columns.flatMap((col) => col.cards);
+  const allCards = columns.flatMap((col) => col.cards ?? []);
 
   const filtered = allCards.filter((c) => {
     if (!c.dueDate) return false;
