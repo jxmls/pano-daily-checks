@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeCard(c: any) {
+  return {
+    ...c,
+    title: c.title || "Untitled",
+    priority: c.priority || "MEDIUM",
+    labels: c.labels ?? [],
+    attachmentUrls: c.attachmentUrls ?? [],
+    comments: c.comments ?? [],
+    description: c.description ?? null,
+    assignee: c.assignee ?? null,
+    dueDate: c.dueDate ? (c.dueDate instanceof Date ? c.dueDate.toISOString() : c.dueDate) : null,
+    createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : (c.createdAt ?? new Date().toISOString()),
+    updatedAt: c.updatedAt instanceof Date ? c.updatedAt.toISOString() : (c.updatedAt ?? new Date().toISOString()),
+  };
+}
+
 const DEFAULT_COLUMNS = ["To Do", "In Progress", "In Review", "Done"];
 
 async function getOrCreateBoard() {
@@ -29,7 +46,10 @@ export async function GET() {
         },
       },
     });
-    return NextResponse.json(columns);
+    return NextResponse.json(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      columns.map((col: any) => ({ ...col, cards: (col.cards ?? []).map(normalizeCard) }))
+    );
   } catch (err) {
     console.error("GET /api/board/columns error:", err);
     return NextResponse.json({ error: "Failed to fetch columns" }, { status: 500 });

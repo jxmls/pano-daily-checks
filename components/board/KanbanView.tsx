@@ -74,8 +74,8 @@ function KanbanCard({ card, index, onSelect }: { card: BoardCard; index: number;
           {/* Priority + title */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
             <PriorityDot priority={card.priority as Priority} />
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", margin: 0, lineHeight: 1.4, flex: 1 }}>
-              {card.title}
+            <p style={{ fontSize: 13, fontWeight: 600, color: card.title ? "#e2e8f0" : "#64748b", margin: 0, lineHeight: 1.4, flex: 1, fontStyle: card.title ? "normal" : "italic" }}>
+              {card.title || "(Untitled)"}
             </p>
           </div>
 

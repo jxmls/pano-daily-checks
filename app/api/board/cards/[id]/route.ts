@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeCard(c: any) {
+  return {
+    ...c,
+    title: c.title || "Untitled",
+    priority: c.priority || "MEDIUM",
+    labels: c.labels ?? [],
+    attachmentUrls: c.attachmentUrls ?? [],
+    comments: c.comments ?? [],
+    description: c.description ?? null,
+    assignee: c.assignee ?? null,
+    dueDate: c.dueDate ? (c.dueDate instanceof Date ? c.dueDate.toISOString() : c.dueDate) : null,
+    createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : (c.createdAt ?? new Date().toISOString()),
+    updatedAt: c.updatedAt instanceof Date ? c.updatedAt.toISOString() : (c.updatedAt ?? new Date().toISOString()),
+  };
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json();
@@ -18,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: updateData,
       include: { comments: { orderBy: { createdAt: "asc" } } },
     });
-    return NextResponse.json(card);
+    return NextResponse.json(normalizeCard(card));
   } catch (err) {
     console.error("PATCH /api/board/cards/[id] error:", err);
     return NextResponse.json({ error: "Failed to update card" }, { status: 500 });

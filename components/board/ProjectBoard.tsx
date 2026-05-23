@@ -152,10 +152,12 @@ export default function ProjectBoard({ engineer }: Props) {
     setColumns((prev) =>
       prev.map((c) =>
         c.id === card.columnId
-          ? { ...c, cards: [...(c.cards ?? []), { ...card, comments: card.comments ?? [] }] }
+          ? { ...c, cards: [...(c.cards ?? []), { ...card, labels: card.labels ?? [], comments: card.comments ?? [] }] }
           : c
       )
     );
+    // Background sync to ensure DB state matches local state
+    fetchColumns();
   };
 
   const handleCardUpdate = (cardId: string, patch: Partial<BoardCard>) => {
