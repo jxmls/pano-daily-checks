@@ -16,7 +16,7 @@ interface Props {
 }
 
 function PriorityBadge({ priority }: { priority: Priority }) {
-  const c = PRIORITY_CONFIG[priority];
+  const c = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.MEDIUM;
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
