@@ -46,10 +46,15 @@ export async function GET() {
         },
       },
     });
-    return NextResponse.json(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      columns.map((col: any) => ({ ...col, cards: (col.cards ?? []).map(normalizeCard) }))
-    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload = columns.map((col: any) => ({
+      id: String(col.id ?? ""),
+      boardId: String(col.boardId ?? ""),
+      name: String(col.name ?? ""),
+      order: Number(col.order ?? 0),
+      cards: (col.cards ?? []).map(normalizeCard),
+    }));
+    return NextResponse.json(payload);
   } catch (err) {
     console.error("GET /api/board/columns error:", err);
     return NextResponse.json({ error: "Failed to fetch columns" }, { status: 500 });
@@ -68,7 +73,15 @@ export async function POST(req: NextRequest) {
       data: { boardId: board.id, name: name ?? "New Column", order: (last?.order ?? -1) + 1 },
       include: { cards: true },
     });
-    return NextResponse.json(column, { status: 201 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = column as any;
+    return NextResponse.json({
+      id: String(c.id ?? ""),
+      boardId: String(c.boardId ?? ""),
+      name: String(c.name ?? "New Column"),
+      order: Number(c.order ?? 0),
+      cards: [],
+    }, { status: 201 });
   } catch (err) {
     console.error("POST /api/board/columns error:", err);
     return NextResponse.json({ error: "Failed to create column" }, { status: 500 });

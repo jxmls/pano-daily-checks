@@ -156,8 +156,6 @@ export default function ProjectBoard({ engineer }: Props) {
           : c
       )
     );
-    // Background sync to ensure DB state matches local state
-    fetchColumns();
   };
 
   const handleCardUpdate = (cardId: string, patch: Partial<BoardCard>) => {

@@ -192,7 +192,9 @@ export default function KanbanView({
                   </>
                 ) : (
                   <>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{col.name}</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: col.name ? "#e2e8f0" : "#64748b", fontStyle: col.name ? "normal" : "italic" }}>
+                      {col.name || "Untitled column"}
+                    </span>
                     <span style={{
                       fontSize: 11, fontWeight: 700, padding: "1px 6px", borderRadius: 4,
                       background: "rgba(100,116,139,0.15)", color: "#64748b",
